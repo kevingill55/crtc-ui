@@ -5,7 +5,7 @@ export default function MembershipInfo() {
     <main className="h-full min-w-full text-main">
       <Navbar />
       <div className="w-full md:gap-12 gap-4 md:px-14 px-4 md:py-10 py-4 flex flex-wrap justify-center">
-        <div className="bg-gray-50 shadow-sm rounded-lg md:px-12 p-4 flex justify-center flex-col md:py-8 md:min-w-[550px] max-w-[750px]">
+        <div className="bg-gray-50 shadow-sm rounded-lg md:px-12 p-4 flex justify-center flex-col md:py-8 md:min-w-[500px] max-w-[750px]">
           <h1 className="text-primary text-xl font-[600] font-heading">
             Becoming a <span className="text-classic-tennis">member</span>
           </h1>
@@ -21,7 +21,7 @@ export default function MembershipInfo() {
             </li>
             <li>
               Previous members in good standing from the prior year have first
-              option to sign up for a new season by March 15th, 2025 .
+              option to sign up for a new season by March 15th, 2026 .
             </li>
             <li>
               Starting July 15th, mid-season memberships are available{" "}
@@ -32,29 +32,21 @@ export default function MembershipInfo() {
             </li>
             <li>
               Membership rates are set for the coming season by the Officers &
-              Board Members each February. The rates for 2025 will be:
+              Board Members each February. The rates for 2026 will be:
               <div className="w-full py-4 px-4">
                 <table className="w-full">
                   <thead>
                     <tr className="bg-blue-100 text-primary font-bold">
                       <td className="p-4">Plan type</td>
-                      <td className="p-4">Before March 15th, 2025</td>
-                      <td className="p-4">After March 15th, 2025</td>
+                      <td className="p-4">Before March 15th, 2026</td>
+                      <td className="p-4">After March 15th, 2026</td>
                     </tr>
                   </thead>
                   <tbody className="bg-blue-50 text-main">
                     <tr>
                       <td className="p-4">
-                        <span className="underline">Adult</span>
-                      </td>
-                      <td className="p-4">$385</td>
-                      <td className="p-4">$410</td>
-                    </tr>
-                    <tr>
-                      <td className="p-4">
-                        <span className="underline">Senior</span> <br />
-                        <span className="text-xs no-underline">
-                          65 and over by May 1st
+                        <span className="font-[500] text-classic-tennis">
+                          Adult
                         </span>
                       </td>
                       <td className="p-4">$385</td>
@@ -62,7 +54,10 @@ export default function MembershipInfo() {
                     </tr>
                     <tr>
                       <td className="p-4">
-                        <span className="underline">Junior</span> <br />
+                        <span className="font-[500] text-classic-tennis">
+                          Junior
+                        </span>{" "}
+                        <br />
                         <span className="text-xs no-underline">
                           18 and under by May 1st
                         </span>
@@ -76,7 +71,7 @@ export default function MembershipInfo() {
             </li>
             <li>
               The indicated rate schedule is applicable to membership
-              applications received or postmarked March 15th, 2025. After that
+              applications received or postmarked March 15th, 2026. After that
               date, fees will increase. Half-season memberships, at half-rates,
               are available starting July 15th, but only for applicants who are
               joining the club for the first time.
@@ -95,7 +90,7 @@ export default function MembershipInfo() {
             </p>
           </div>
         </div>
-        <div className="bg-gray-50 shadow-sm rounded-lg md:px-12 flex flex-col p-4 md:py-8 md:min-w-[550px] max-w-[750px] text-main">
+        <div className="bg-gray-50 shadow-sm rounded-lg md:px-12 flex flex-col p-4 md:py-8 md:min-w-[500px] max-w-[750px] text-main">
           <h1 className="text-primary text-xl font-[600] font-heading">
             <span className="text-classic-tennis">Leagues</span> at CRTC
           </h1>

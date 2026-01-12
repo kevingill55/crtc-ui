@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 html, body {
-  font-family: var(--font-roboto-flex), sans-serif;
+  font-family: var(--font-geist), sans-serif;
   height: 100%;
   width: 100%;
   scrollbar-gutter: stable;
@@ -9,9 +9,7 @@ html, body {
 
 @theme inline {
   --font-heading: var(--font-playfair-display), sans-serif;
-  --font-main: var(--font-roboto-flex), sans-serif;
-  --font-sans: var(--font-public-sans), sans-serif;
-  --font-temp: var(--font-archivo), sans-serif;
+  --font-main: var(--font-geist), sans-serif;
   --color-primary: #1b263b;
   --color-secondary: #415a77;
   --color-lightbg: #e0e4e8;
