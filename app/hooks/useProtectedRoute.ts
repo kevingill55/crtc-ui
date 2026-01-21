@@ -3,8 +3,9 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
+import type { Session, AuthError } from "@supabase/auth-js";
 import { supabase } from "../clients/supabase";
-import { AuthSession, Member } from "../types";
+import { Member } from "../types";
 import {
   NotificationStatus,
   useNotificationsContext,
@@ -25,7 +26,7 @@ export function useProtectedRoute() {
     data: sessionData,
     isError: isSessionError,
     isLoading: isSessionLoading,
-  } = useQuery<{ data: { session: AuthSession } }>({
+  } = useQuery<{ error: AuthError | null; data: { session: Session } }>({
     queryKey: ["getSession"],
     queryFn: () => supabase.auth.getSession(),
   });

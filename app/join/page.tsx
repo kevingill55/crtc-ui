@@ -9,12 +9,7 @@ import {
   NotificationStatus,
   useNotificationsContext,
 } from "../providers/Notifications";
-import { AuthSession, AuthUser, Member } from "../types";
-
-export type LoginResponse = {
-  session: AuthSession;
-  user: AuthUser;
-};
+import { Member } from "../types";
 
 export default function SignUp() {
   const [loading, setLoading] = useState(false);
