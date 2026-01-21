@@ -11,150 +11,154 @@ import {
   faUnlock,
   faBarsStaggered,
   faArrowRight,
+  IconDefinition,
+  faBars,
 } from "@fortawesome/free-solid-svg-icons";
+import { AppRouterInstance } from "next/dist/shared/lib/app-router-context.shared-runtime";
+
+const NavMenuItem = ({
+  router,
+  title,
+  subtitle,
+  route,
+  icon,
+}: {
+  icon: IconDefinition;
+  title: string;
+  subtitle: string;
+  route: string;
+  router: AppRouterInstance;
+}) => {
+  return (
+    <div
+      onClick={() => router.push(route)}
+      className="flex p-1 hover:bg-gray-100 hover:text-primary rounded-lg items-center gap-2"
+    >
+      <div className="bg-gray-100 p-2 rounded-sm">
+        <FontAwesomeIcon size="lg" icon={icon} />
+      </div>
+      <div>
+        <p className="text-main">{title}</p>
+        <p className="text-gray-600 text-xs">{subtitle}</p>
+      </div>
+    </div>
+  );
+};
 
 export default function Navbar() {
   const router = useRouter();
   return (
-    <nav className="pb-10 pt-5 px-8 w-full flex justify-center text-main text-sm">
-      <div className="max-w-[1120px] w-full h-min flex justify-between items-center">
+    <nav className="md:pb-10 md:pt-5 md:px-8 py-4 px-6 w-full flex md:border-0 border-b border-primary justify-center text-main text-sm">
+      <div className="md:hidden flex w-full items-center justify-between">
+        <Link href="/">
+          <div className="flex items-center gap-2 mr-10 hover:cursor-pointer hover:opacity-70">
+            <span className="font-[600] text-primary text-nowrap leading-5 text-center tracking-tight text-xl">
+              Charles River <br /> Tennis Club
+            </span>
+          </div>
+        </Link>
+        <div>
+          <FontAwesomeIcon icon={faBars} size="xl" />
+        </div>
+      </div>
+      <div className="max-w-[1120px] w-full h-min md:flex hidden justify-between items-center">
         <div className="gap-2 flex items-center w-min h-min">
           <Link href="/">
             <div className="flex items-center gap-2 mr-10 hover:cursor-pointer hover:opacity-70">
-              <span className="font-bold text-primary font-heading text-nowrap leading-5 text-xl text-center tracking-tight">
+              <span className="font-bold text-primary text-nowrap leading-5 text-xl text-center tracking-tight">
                 Charles River <br />
                 Tennis Club
               </span>
             </div>
           </Link>
-          <div className="group relative hover:cursor-pointer hover:text-gray-600  hover:bg-gray-100 rounded-sm bg-transparent px-4 py-2 flex items-center gap-2">
+          <div className="group relative hover:cursor-pointer hover:text-gray-600  hover:bg-white rounded-sm bg-transparent px-4 py-2 flex items-center gap-2">
             <span>Membership</span>
             <div className="transition-transform duration-500 group-hover:rotate-180">
               <FontAwesomeIcon size="xs" icon={faAngleDown} />
             </div>
 
             <div className="hidden group-hover:block hover:block z-0 absolute w-[325px] top-full pt-4 left-0">
-              <div className="shadow-sm border-1 rounded-xl border-gray-300 bg-white">
+              <div className="shadow-sm border rounded-xl border-gray-300 bg-white">
                 <div className="flex flex-col p-2 gap-2 text-gray-400">
-                  <div
-                    onClick={() => router.push("/membership-info")}
-                    className="flex p-1 hover:bg-gray-100 hover:text-primary rounded-lg items-center gap-2"
-                  >
-                    <div className="bg-gray-100 p-2 rounded-sm">
-                      <FontAwesomeIcon size="lg" icon={faFileLines} />
-                    </div>
-                    <div>
-                      <p className="text-main">Info</p>
-                      <p className="text-gray-600 text-xs">
-                        Everything CRTC memberships
-                      </p>
-                    </div>
-                  </div>
-                  <div
-                    onClick={() => router.push("/leagues")}
-                    className="flex p-1 hover:bg-gray-100 hover:text-primary rounded-lg items-center gap-2"
-                  >
-                    <div className="bg-gray-100 p-2 rounded-sm">
-                      <FontAwesomeIcon size="lg" icon={faBarsStaggered} />
-                    </div>
-                    <div>
-                      <p className="text-main">Leagues</p>
-                      <p className="text-gray-600 text-xs">
-                        Singles, doubles, and mixed doubles
-                      </p>
-                    </div>
-                  </div>
-                  <div
-                    onClick={() => router.push("/open-tennis")}
-                    className="flex p-1 hover:bg-gray-100 hover:text-primary rounded-lg items-center gap-2"
-                  >
-                    <div className="bg-gray-100 p-2 rounded-sm">
-                      <FontAwesomeIcon size="lg" icon={faUnlock} />
-                    </div>
-                    <div>
-                      <p className="text-main">Drop-in tennis</p>
-                      <p className="text-gray-600 text-xs">
-                        Dedicated open tennis court time
-                      </p>
-                    </div>
-                  </div>
-                  <div
-                    onClick={() => router.push("/join")}
-                    className="flex p-1 hover:bg-gray-100 hover:text-primary rounded-lg items-center gap-2"
-                  >
-                    <div className="bg-gray-100 p-2 rounded-sm">
-                      <FontAwesomeIcon size="lg" icon={faArrowRight} />
-                    </div>
-                    <div>
-                      <p className="text-main">Join</p>
-                      <p className="text-gray-600 text-xs">
-                        New member application for first timers
-                      </p>
-                    </div>
-                  </div>
+                  <NavMenuItem
+                    router={router}
+                    route="/public/membership-info"
+                    title="Info"
+                    icon={faFileLines}
+                    subtitle="Everything CRTC memberships"
+                  />
+                  <NavMenuItem
+                    router={router}
+                    route="/public/leagues"
+                    title="Leagues"
+                    icon={faBarsStaggered}
+                    subtitle="Singles, doubles, and mixed doubles"
+                  />
+                  <NavMenuItem
+                    router={router}
+                    route="/public/open-tennis"
+                    title="Drop-in tennis"
+                    icon={faUnlock}
+                    subtitle="Dedicated open tennis court time"
+                  />
+                  <NavMenuItem
+                    router={router}
+                    route="/join"
+                    title="Join"
+                    icon={faArrowRight}
+                    subtitle="New member application for first timers"
+                  />
                 </div>
               </div>
             </div>
           </div>
-          <div className="group relative hover:cursor-pointer hover:text-gray-600 hover:bg-gray-100 rounded-sm bg-transparent px-4 py-2 flex items-center gap-2">
+          <div className="group relative hover:cursor-pointer hover:text-gray-600 hover:bg-white rounded-sm bg-transparent px-4 py-2 flex items-center gap-2">
             <span>About</span>
             <div className="transition-transform duration-500 group-hover:rotate-180">
               <FontAwesomeIcon size="xs" icon={faAngleDown} />
             </div>
 
             <div className="hidden group-hover:block hover:block z-0 absolute w-[325px] top-full pt-4 left-0">
-              <div className="shadow-sm border-1 rounded-xl border-gray-300 bg-white">
+              <div className="shadow-sm border rounded-xl border-gray-300 bg-white">
                 <div className="flex flex-col p-2 gap-2 text-gray-400">
-                  <div className="flex p-1 hover:bg-gray-100 hover:text-primary rounded-lg items-center gap-2">
-                    <div className="bg-gray-100 p-2 rounded-sm">
-                      <FontAwesomeIcon size="lg" icon={faBookOpen} />
-                    </div>
-                    <div>
-                      <p className="text-main">History</p>
-                      <p className="text-gray-600 text-xs">
-                        Learn more about the history of CRTC from then to now...
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex p-1 hover:bg-gray-100 hover:text-primary rounded-lg items-center gap-2">
-                    <div className="bg-gray-100 p-2 rounded-sm">
-                      <FontAwesomeIcon size="lg" icon={faPeopleGroup} />
-                    </div>
-                    <div>
-                      <p className="text-main">People</p>
-                      <p className="text-gray-600 text-xs">
-                        Who we are, officers, board members
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex p-1 hover:bg-gray-100 hover:text-primary rounded-lg items-center gap-2">
-                    <div className="bg-gray-100 p-2 rounded-sm">
-                      <FontAwesomeIcon size="lg" icon={faCircleDot} />
-                    </div>
-                    <div>
-                      <p className="text-main">Clay</p>
-                      <p className="text-gray-600 text-xs">
-                        Discover the benefits of playing on clay
-                      </p>
-                    </div>
-                  </div>
+                  <NavMenuItem
+                    router={router}
+                    route="/public/history"
+                    title="History"
+                    icon={faBookOpen}
+                    subtitle="Learn more about the history of CRTC from then to now"
+                  />
+                  <NavMenuItem
+                    router={router}
+                    route="/public/board"
+                    title="People"
+                    icon={faPeopleGroup}
+                    subtitle="Who we are, officers, board members"
+                  />
+                  <NavMenuItem
+                    router={router}
+                    route="/public/clay"
+                    title="Clay"
+                    icon={faCircleDot}
+                    subtitle="Discover the benefits of playing on clay"
+                  />
                 </div>
               </div>
             </div>
           </div>
-          <div className="group hover:cursor-pointer hover:text-gray-600 hover:bg-gray-100 rounded-sm bg-transparent px-4 py-2 flex items-center gap-2">
+          <div className="group hover:cursor-pointer hover:text-gray-600 hover:bg-white rounded-sm bg-transparent px-4 py-2 flex items-center gap-2">
             <span>Contact</span>
           </div>
         </div>
 
         <div className="flex items-center gap-2 w-min h-min">
           <Link href="/login">
-            <div className="group hover:cursor-pointer hover:text-gray-600 hover:bg-gray-100 rounded-sm bg-transparent px-4 py-2 flex items-center gap-2">
+            <div className="group hover:cursor-pointer hover:text-gray-600 hover:bg-white rounded-sm bg-transparent px-4 py-2 flex items-center gap-2">
               <span className="text-nowrap">Log in</span>
             </div>
           </Link>
           <Link href="/join">
-            <div className="group hover:cursor-pointer hover:text-gray-600 hover:bg-gray-100 bg-white rounded-sm shadow-xl border-1 border-gray-300 px-4 py-2 flex items-center gap-2">
+            <div className="group hover:cursor-pointer hover:text-gray-600 hover:bg-gray-100 bg-white rounded-sm shadow-xl border border-gray-300 px-4 py-2 flex items-center gap-2">
               <span>Join</span>
               <FontAwesomeIcon icon={faArrowRight} />
             </div>

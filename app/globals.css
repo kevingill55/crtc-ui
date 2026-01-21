@@ -1,10 +1,99 @@
 @import "tailwindcss";
+@tailwind utilities;
+
+@font-face {
+  font-family: 'Montreal';
+  src: url('/fonts/PPNeueMontreal-Thin.otf') format('opentype');
+  font-weight: 200;
+}
+
+@font-face {
+  font-family: 'Montreal';
+  src: url('/fonts/PPNeueMontreal-Bold.otf') format('opentype');
+  font-weight: 700;
+}
+
+@font-face {
+  font-family: 'Montreal';
+  src: url('/fonts/PPNeueMontreal-Book.otf') format('opentype');
+  font-weight: 500;
+}
+
+@font-face {
+  font-family: 'Montreal';
+  src: url('/fonts/PPNeueMontreal-Medium.otf') format('opentype');
+  font-weight: 500;
+}
+
+@font-face {
+  font-family: 'Montreal';
+  src: url('/fonts/PPNeueMontreal-Italic.otf') format('opentype');
+  font-weight: 400;
+  font-style: italic;
+}
+
+
+@layer utilities {
+  /* Chrome, Safari and Opera */
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  /* IE and Edge */
+  .no-scrollbar {-ms-overflow-style: none;}
+  /* Firefox */
+  .no-scrollbar {scrollbar-width: none;}
+}
 
 html, body {
-  font-family: var(--font-geist), sans-serif;
+  /* font-family: var(--font-geist), sans-serif; */
+  font-family: "Montreal";
   height: 100%;
   width: 100%;
-  scrollbar-gutter: stable;
+}
+
+.newtons-cradle {
+  @apply relative flex items-center justify-center w-[var(--uib-size)] h-[var(--uib-size)];
+  --uib-size: 50px;
+  --uib-speed: 1.2s;
+  --uib-color: #474554;
+}
+
+.newtons-cradle__dot {
+  @apply relative flex items-center h-full w-3/12 origin-[center_top] after:content-[''] after:block after:w-full after:h-1/4 after:bg-[color:var(--uib-color)] after:rounded-[50%] first:animate-[swing_var(--uib-speed)_linear_infinite] last:animate-[swing2_var(--uib-speed)_linear_infinite];
+}
+
+@keyframes swing {
+  0% {
+    transform: rotate(0deg);
+    animation-timing-function: ease-out;
+  }
+
+ 25% {
+  transform: rotate(70deg);
+  animation-timing-function: ease-in;
+ }
+
+ 50% {
+  transform: rotate(0deg);
+  animation-timing-function: linear;
+ }
+}
+
+@keyframes swing2 {
+ 0% {
+  transform: rotate(0deg);
+  animation-timing-function: linear;
+ }
+
+ 50% {
+  transform: rotate(0deg);
+  animation-timing-function: ease-out;
+ }
+
+ 75% {
+  transform: rotate(-70deg);
+  animation-timing-function: ease-in;
+ }
 }
 
 @theme inline {

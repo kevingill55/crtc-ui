@@ -2,10 +2,11 @@
 module.exports = {
   theme: {
     extend: {
-      backgroundImage: {
-        "hero-homepage": "url('Charles.jpg')",
+      fontFamily: {
+        primary: "Montreal",
       },
     },
   },
-  plugins: [],
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  plugins: [require("@tailwindcss/typography")],
 };

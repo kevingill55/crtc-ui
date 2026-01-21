@@ -1,42 +1,63 @@
 "use client";
-import { useEffect, useState } from "react";
+
+import { useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "../clients/supabase";
-import { AuthSession, Profile } from "../types";
+import { AuthSession, Member } from "../types";
+import {
+  NotificationStatus,
+  useNotificationsContext,
+} from "../providers/Notifications";
+
+export const getMember = async (memberId: string) => {
+  const response = await fetch(`/api/members/${memberId}`, {
+    method: "GET",
+  });
+  return await response.json();
+};
 
 export function useProtectedRoute() {
-  const [loading, setLoading] = useState(false);
-  const [user, setUser] = useState<null | Profile>(null);
   const router = useRouter();
+  const { addNotification } = useNotificationsContext();
+
+  const {
+    data: sessionData,
+    isError: isSessionError,
+    isLoading: isSessionLoading,
+  } = useQuery<{ data: { session: AuthSession } }>({
+    queryKey: ["getSession"],
+    queryFn: () => supabase.auth.getSession(),
+  });
+
+  const memberId = sessionData?.data?.session.user.id || "";
+
+  const {
+    data: userData,
+    isLoading: isUserLoading,
+    isError: isUserError,
+  } = useQuery<{ success: boolean; data: { member: Member } }>({
+    queryKey: ["getMember"],
+    queryFn: async () => {
+      return getMember(memberId);
+    },
+    enabled: !!sessionData?.data.session,
+  });
+
   useEffect(() => {
-    (async () => {
-      try {
-        const { data }: { data: { session: AuthSession } } =
-          await supabase.auth.getSession();
-        if (!data.session) {
-          router.push("/login");
-        } else {
-          setLoading(true);
+    if (userData && !userData.success) {
+      addNotification({
+        status: NotificationStatus.WARNING,
+        title: "Your session has timed out — please log in again to continue",
+        id: "temp",
+      });
+      router.push("/login");
+    }
+  }, [router, addNotification, userData]);
 
-          const getUserFetch = await fetch("/api/user", {
-            method: "POST",
-            body: JSON.stringify({
-              userId: data.session.user.id,
-            }),
-          });
-
-          const {
-            data: { user },
-          } = await getUserFetch.json();
-
-          setLoading(false);
-          setUser(user);
-        }
-      } catch (error) {
-        console.error("Problem with protected route", error);
-      }
-    })();
-  }, [router]);
-
-  return { user, loading };
+  return {
+    user: userData?.data.member,
+    error: isUserError || isSessionError,
+    loading: isUserLoading || isSessionLoading,
+  };
 }

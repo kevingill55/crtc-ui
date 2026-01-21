@@ -15,7 +15,25 @@ export type AuthUser = {
   confirmed_at: string;
 };
 
-export type Profile = {
+export enum MemberStatus {
+  ACTIVE = "ACTIVE",
+  INACTIVE = "INACTIVE",
+  PENDING = "PENDING",
+  WAITLIST = "WAITLIST",
+}
+
+export enum MemberGender {
+  MALE = "Male",
+  FEMALE = "Female",
+}
+
+export enum MemberPlanType {
+  ADULT = "Adult",
+  JUNIOR = "Junior",
+}
+
+export type Member = {
+  created_at: string;
   id: string;
   rating: number;
   first_name: string;
@@ -23,6 +41,7 @@ export type Profile = {
   address: string;
   phone_number: string;
   email: string;
-  gender: string; // "F" or "M"
-  active: boolean;
+  plan: MemberPlanType;
+  gender: MemberGender;
+  status: MemberStatus;
 };
