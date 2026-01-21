@@ -12,7 +12,7 @@ const requestOptions = {
 export async function GET(request: NextRequest) {
   const apiPath = request.nextUrl.pathname;
   try {
-    const response = await fetch(`http://127.0.0.1:5000${apiPath}`, {
+    const response = await fetch(`${process.env.API_URL}${apiPath}`, {
       ...requestOptions,
       method: "GET",
     });
@@ -34,7 +34,7 @@ export async function GET(request: NextRequest) {
 export async function DELETE(request: NextRequest) {
   const apiPath = request.nextUrl.pathname;
   try {
-    const response = await fetch(`http://127.0.0.1:5000${apiPath}`, {
+    const response = await fetch(`${process.env.API_URL}${apiPath}`, {
       ...requestOptions,
       method: "DELETE",
     });
@@ -57,7 +57,7 @@ export async function PUT(request: NextRequest) {
   const apiPath = request.nextUrl.pathname;
   const body = await request.json();
   try {
-    const response = await fetch(`http://127.0.0.1:5000${apiPath}`, {
+    const response = await fetch(`${process.env.API_URL}${apiPath}`, {
       ...requestOptions,
       method: "PUT",
       body: JSON.stringify(body),

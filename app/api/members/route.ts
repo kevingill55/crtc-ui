@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
     searchParam = `?status=${statusParam}`;
   try {
     const response = await fetch(
-      `http://127.0.0.1:5000/api/members${searchParam}`,
+      `${process.env.API_URL}/api/members${searchParam}`,
       {
         ...requestOptions,
         method: "GET",
@@ -46,7 +46,7 @@ export async function POST(request: Request) {
     body;
 
   try {
-    const response = await fetch(`http://127.0.0.1:5000/api/members`, {
+    const response = await fetch(`${process.env.API_URL}/api/members`, {
       ...requestOptions,
       method: "POST",
       body: JSON.stringify({
