@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack",
+    "dev:local": "API_URL='http://127.0.0.1:5000' next dev --turbopack",
     "build": "next build --turbopack",
     "start": "next start",
     "lint": "eslint"
