@@ -17,7 +17,7 @@ import {
 } from "@/app/types";
 import { normalizeString } from "@/app/utils";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import React, { useState } from "react";
+import { useState } from "react";
 import { ActionsDropdown } from "./ActionsDropdown";
 import { FilterBar } from "./FilterBar";
 
@@ -210,7 +210,9 @@ export default function AdminAccounts() {
     select: (data) => {
       if (!filter) return data;
       const updatedResults = data.data.filter(
-        (it) => it.first_name.includes(filter) || it.last_name.includes(filter)
+        (it) =>
+          it.first_name.toLowerCase().includes(filter.trim().toLowerCase()) ||
+          it.last_name.toLowerCase().includes(filter)
       );
       return { data: updatedResults };
     },

@@ -15,6 +15,7 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import { AppRouterInstance } from "next/dist/shared/lib/app-router-context.shared-runtime";
 import { PropsWithChildren } from "react";
+import { useProtectedRoute } from "../hooks/useProtectedRoute";
 
 function MemberNavMenuItem({
   route,
@@ -62,6 +63,7 @@ function MenuNavAnchor({
 
 export default function MemberNavbar() {
   const router = useRouter();
+  const { isAdmin } = useProtectedRoute({ isAdmin: false });
   return (
     <nav className="pb-10 pt-5 px-8 w-full flex justify-center text-main text-sm">
       <div className="max-w-[1120px] w-full h-min flex justify-between items-center">
@@ -134,28 +136,30 @@ export default function MemberNavbar() {
             </div>
           </MenuNavAnchor>
 
-          <MenuNavAnchor title="Admin">
-            <div className="hidden group-hover:block hover:block z-0 absolute w-[325px] top-full pt-4 left-0">
-              <div className="shadow-sm border rounded-xl border-gray-300 bg-white">
-                <div className="flex flex-col p-2 gap-2 text-gray-400">
-                  <MemberNavMenuItem
-                    route="/admin/accounts"
-                    icon={faListCheck}
-                    title="Accounts"
-                    router={router}
-                    subtitle="Dashboard to view and manage all membership accounts"
-                  />
-                  <MemberNavMenuItem
-                    route="/admin/email"
-                    icon={faEnvelope}
-                    title="Email"
-                    router={router}
-                    subtitle="Mass email generator with helpful pre-selected lists"
-                  />
+          {isAdmin && (
+            <MenuNavAnchor title="Admin">
+              <div className="hidden group-hover:block hover:block z-0 absolute w-[325px] top-full pt-4 left-0">
+                <div className="shadow-sm border rounded-xl border-gray-300 bg-white">
+                  <div className="flex flex-col p-2 gap-2 text-gray-400">
+                    <MemberNavMenuItem
+                      route="/admin/accounts"
+                      icon={faListCheck}
+                      title="Accounts"
+                      router={router}
+                      subtitle="Dashboard to view and manage all membership accounts"
+                    />
+                    <MemberNavMenuItem
+                      route="/admin/email"
+                      icon={faEnvelope}
+                      title="Email"
+                      router={router}
+                      subtitle="Mass email generator with helpful pre-selected lists"
+                    />
+                  </div>
                 </div>
               </div>
-            </div>
-          </MenuNavAnchor>
+            </MenuNavAnchor>
+          )}
 
           <div className="group hover:cursor-pointer hover:text-primary hover:bg-white rounded-sm bg-transparent px-4 py-2 flex items-center gap-2">
             <span>Contact</span>

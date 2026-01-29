@@ -5,20 +5,14 @@ import { useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import type { Session, AuthError } from "@supabase/auth-js";
 import { supabase } from "../clients/supabase";
-import { Member } from "../types";
+import { Member, MemberRole, MemberStatus } from "../types";
+import { getMember } from "../utils";
 import {
   NotificationStatus,
   useNotificationsContext,
 } from "../providers/Notifications";
 
-export const getMember = async (memberId: string) => {
-  const response = await fetch(`/api/members/${memberId}`, {
-    method: "GET",
-  });
-  return await response.json();
-};
-
-export function useProtectedRoute() {
+export function useProtectedRoute({ isAdmin }: { isAdmin: boolean }) {
   const router = useRouter();
   const { addNotification } = useNotificationsContext();
 
@@ -54,10 +48,18 @@ export function useProtectedRoute() {
       });
       router.push("/login");
     }
-  }, [router, addNotification, userData]);
+
+    if (isAdmin) {
+      if (userData && userData.data.member.role !== MemberRole.ADMIN) {
+        router.back();
+      }
+    }
+  }, [router, addNotification, isAdmin, userData]);
 
   return {
     user: userData?.data.member,
+    isActive: userData?.data.member.status === MemberStatus.ACTIVE || false,
+    isAdmin: userData?.data.member.role === MemberRole.ADMIN || false,
     error: isUserError || isSessionError,
     loading: isUserLoading || isSessionLoading,
   };

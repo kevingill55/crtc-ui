@@ -5,6 +5,11 @@ export enum MemberStatus {
   WAITLIST = "WAITLIST",
 }
 
+export enum MemberRole {
+  ADMIN = "ADMIN",
+  MEMBER = "MEMBER",
+}
+
 export enum MemberGender {
   MALE = "Male",
   FEMALE = "Female",
@@ -24,6 +29,8 @@ export type Member = {
   address: string;
   phone_number: string;
   email: string;
+  waiver: boolean;
+  role: MemberRole;
   plan: MemberPlanType;
   gender: MemberGender;
   status: MemberStatus;

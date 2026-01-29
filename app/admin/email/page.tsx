@@ -5,51 +5,12 @@ import type { Editor } from "@tiptap/react";
 import { Placeholder } from "@tiptap/extension-placeholder";
 import { EditorContent, useEditor, useEditorState } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
-import React, { useState } from "react";
-import { SendEmailCommand, SESv2Client } from "@aws-sdk/client-sesv2";
+import { useState } from "react";
 import { useProtectedRoute } from "../../hooks/useProtectedRoute";
-import "./temp.css";
 import ProtectedPage from "@/app/components/ProtectedPage";
-
-const REGION = "us-east-2";
-const sesClient = new SESv2Client({
-  region: REGION,
-  credentials: {
-    accessKeyId: "",
-    secretAccessKey: "",
-  },
-});
-
-const sendMail = async (subject: string, data: string) => {
-  const params = {
-    Content: {
-      Simple: {
-        Body: {
-          Html: {
-            Charset: "UTF-8",
-            Data: data,
-          },
-        },
-        Subject: {
-          Charset: "UTF-8",
-          Data: subject,
-        },
-      },
-    },
-    Destination: {
-      ToAddresses: ["info@charlesrivertennisclub.com"],
-    },
-    FromEmailAddress: "info@charlesrivertennisclub.com",
-  };
-
-  try {
-    const data = await sesClient.send(new SendEmailCommand(params));
-    console.log("Email sent successfully", data);
-    return data;
-  } catch (err) {
-    console.error("Error sending email", err);
-  }
-};
+import { sendMassEmail } from "@/app/actions/send-email";
+import "./temp.css";
+import { useMutation } from "@tanstack/react-query";
 
 const extensions = [
   StarterKit.configure({
@@ -193,8 +154,9 @@ const MenuBar = ({ editor }: { editor: Editor }) => {
 };
 
 export default function AdminEmail() {
+  const [sendToList, setSendToList] = useState("");
   const [subject, setSubject] = useState("");
-  const { user } = useProtectedRoute();
+  const { user } = useProtectedRoute({ isAdmin: true });
   const editor = useEditor({
     extensions,
     immediatelyRender: false,
@@ -205,11 +167,32 @@ export default function AdminEmail() {
     },
   });
 
+  const { mutate: submitEmail } = useMutation({
+    onSuccess: () => {
+      setSubject("");
+      setSendToList("");
+      editor?.commands.setContent("");
+      // addNotification({
+      //   status: NotificationStatus.SUCCESS,
+      //   id: "temp",
+      //   expiresIn: 5000,
+      //   title: "User deleted",
+      // });
+    },
+    mutationFn: async (content: string) => {
+      const formData = new FormData();
+      formData.append("body", content);
+      formData.append("subject", subject);
+      formData.append("recipients", sendToList);
+      await sendMassEmail(formData);
+    },
+  });
+
   if (!user || !editor) return null;
 
   const handleOnClick = () => {
     const htmlContent = editor.getHTML();
-    sendMail(subject, htmlContent);
+    submitEmail(htmlContent);
   };
 
   return (
@@ -218,12 +201,24 @@ export default function AdminEmail() {
         <div className="flex items-center gap-2 w-full mb-4">
           <input
             id="crtc-admin-email-subject"
+            value={sendToList}
+            onChange={(e) => {
+              setSendToList(e.target.value);
+            }}
+            type="text"
+            placeholder="Recipients"
+            className="px-4 py-2 w-1/2 rounded-lg border border-gray-200 focus:outline-1 focus:outline-primary hover:border-gray-400"
+          />
+        </div>
+        <div className="flex items-center gap-2 w-full mb-4">
+          <input
+            id="crtc-admin-email-subject"
             value={subject}
             onChange={(e) => {
               setSubject(e.target.value);
             }}
             type="text"
-            placeholder="Email subject"
+            placeholder="Subject"
             className="px-4 py-2 w-1/2 rounded-lg border border-gray-200 focus:outline-1 focus:outline-primary hover:border-gray-400"
           />
         </div>
@@ -237,13 +232,12 @@ export default function AdminEmail() {
       </div>
       <div className="flex w-full gap-2 items-center py-6 pl-2">
         <button
-          onClick={handleOnClick}
+          onClick={() => editor?.commands.setContent("")}
           className="hover:cursor-pointer hover:bg-gray-300/80 rounded-lg py-2 px-6 text-sm flex justify-center items-center bg-gray-100 text-primary border-primary border"
         >
           Clear
         </button>
         <button
-          disabled={true}
           onClick={handleOnClick}
           className="hover:cursor-pointer hover:bg-primary/80 border border-primary rounded-lg py-2 px-6 text-sm flex justify-center items-center bg-primary text-white"
         >

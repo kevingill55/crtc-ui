@@ -6,9 +6,16 @@ import MemberNavbar from "./MemberNavbar";
 const ProtectedPage = ({
   title,
   subtitle,
+  isAdmin,
   children,
-}: PropsWithChildren<{ title: string; subtitle?: string }>) => {
-  const { loading, error, user } = useProtectedRoute();
+}: PropsWithChildren<{
+  title: string;
+  subtitle?: string;
+  isAdmin?: boolean;
+}>) => {
+  const { loading, error, user } = useProtectedRoute({
+    isAdmin: isAdmin || false,
+  });
 
   if (loading) {
     return <Loading />;
