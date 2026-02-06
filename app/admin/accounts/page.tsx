@@ -5,6 +5,7 @@ import { FormInput } from "@/app/components/FormInput";
 import { Modal } from "@/app/components/Modal";
 import { PhoneInput } from "@/app/components/PhoneInput";
 import ProtectedPage from "@/app/components/ProtectedPage";
+import { useProtectedRoute } from "@/app/hooks/useProtectedRoute";
 import {
   NotificationStatus,
   useNotificationsContext,
@@ -45,7 +46,11 @@ const deleteModalContent = (member: Member) => {
   );
 };
 
-const editModalContent = (member: Member, setMember: (x: Member) => void) => {
+const editModalContent = (
+  member: Member,
+  setMember: (x: Member) => void,
+  onCreateAccount: (memberId: string) => void
+) => {
   return (
     <div className="pb-6 text-primary flex flex-col gap-4">
       <div className="flex flex-col w-3/4">
@@ -135,7 +140,7 @@ const editModalContent = (member: Member, setMember: (x: Member) => void) => {
           <Dropdown
             label={member.status}
             value={member.status}
-            onSelect={(val: string) => {
+            onSelect={(val) => {
               setMember({ ...member, status: val as MemberStatus });
             }}
             options={[
@@ -163,7 +168,7 @@ const editModalContent = (member: Member, setMember: (x: Member) => void) => {
           <Dropdown
             label={member.plan}
             value={member.plan}
-            onSelect={(val: string) => {
+            onSelect={(val) => {
               setMember({ ...member, plan: val as MemberPlanType });
             }}
             options={[
@@ -177,7 +182,7 @@ const editModalContent = (member: Member, setMember: (x: Member) => void) => {
           <Dropdown
             label={member.gender}
             value={member.gender}
-            onSelect={(val: string) => {
+            onSelect={(val) => {
               setMember({ ...member, gender: val as MemberGender });
             }}
             options={[
@@ -187,6 +192,16 @@ const editModalContent = (member: Member, setMember: (x: Member) => void) => {
           />
         </div>
       </div>
+      {member.status === MemberStatus.WAITLIST && (
+        <div>
+          <button
+            onClick={() => onCreateAccount(member.id)}
+            className="hover:cursor-pointer hover:bg-gray-300/80 rounded-lg py-2 px-6 text-sm flex justify-center items-center bg-gray-100 text-primary border-primary border"
+          >
+            Create account
+          </button>
+        </div>
+      )}
     </div>
   );
 };
@@ -198,6 +213,7 @@ const AccountTableHeading = ({ title }: { title: string }) => (
 );
 
 export default function AdminAccounts() {
+  useProtectedRoute({ isAdmin: true });
   const queryClient = useQueryClient();
   const { addNotification } = useNotificationsContext();
   const [activeView, setActiveView] = useState("Waitlist");
@@ -206,15 +222,24 @@ export default function AdminAccounts() {
   const [deleteMember, setDeleteMember] = useState<Member | null>(null);
 
   const { data: getMembersResponse } = useQuery<{ data: Member[] }>({
-    queryKey: [`getMembers`, activeView.toLowerCase()],
+    queryKey: ["getMembers", activeView.toLowerCase()],
     select: (data) => {
-      if (!filter) return data;
+      if (!filter)
+        return {
+          data: data.data.sort((a, b) =>
+            a.first_name.localeCompare(b.first_name)
+          ),
+        };
       const updatedResults = data.data.filter(
         (it) =>
           it.first_name.toLowerCase().includes(filter.trim().toLowerCase()) ||
           it.last_name.toLowerCase().includes(filter)
       );
-      return { data: updatedResults };
+      return {
+        data: updatedResults.sort((a, b) =>
+          a.first_name.localeCompare(b.first_name)
+        ),
+      };
     },
     queryFn: async () => {
       const listMembersFetch = await fetch(
@@ -230,7 +255,7 @@ export default function AdminAccounts() {
 
   const { mutate: deleteUser } = useMutation({
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [`getMembers`] });
+      queryClient.invalidateQueries({ queryKey: ["getMembers"] });
       addNotification({
         status: NotificationStatus.SUCCESS,
         id: "temp",
@@ -269,6 +294,25 @@ export default function AdminAccounts() {
     },
   });
 
+  const { mutate: onCreateAccount } = useMutation({
+    onSuccess: () => {
+      addNotification({
+        status: NotificationStatus.SUCCESS,
+        id: "temp",
+        // expiresIn: 5000,
+        title: "Account created successfully",
+      });
+      setEditMember(null);
+    },
+    mutationFn: async (memberId: string) => {
+      const createAccountFetch = await fetch(`/api/accounts/${memberId}`, {
+        method: "POST",
+      });
+
+      return createAccountFetch.json();
+    },
+  });
+
   return (
     <ProtectedPage
       title="Accounts"
@@ -294,7 +338,7 @@ export default function AdminAccounts() {
           onDone={() => {
             updateUser(editMember);
           }}
-          content={editModalContent(editMember, setEditMember)}
+          content={editModalContent(editMember, setEditMember, onCreateAccount)}
         />
       )}
       <FilterBar
@@ -303,27 +347,24 @@ export default function AdminAccounts() {
         filter={filter}
         activeView={activeView}
       />
-      <table className="w-full">
+      <table className="w-full mb-10">
         <thead className="bg-primary text-white">
           <tr>
             <AccountTableHeading title={"Created"} />
-            <AccountTableHeading title={"First"} />
-            <AccountTableHeading title={"Last"} />
+            <AccountTableHeading title={"Name"} />
             <AccountTableHeading title={"Email"} />
             <AccountTableHeading title={"Phone"} />
             <AccountTableHeading title={"Address"} />
-            <AccountTableHeading title={"Gender"} />
-            <AccountTableHeading title={"Plan"} />
             <AccountTableHeading title={"Status"} />
             <AccountTableHeading title={"Actions"} />
           </tr>
         </thead>
-        <tbody>
+        <tbody className="border border-gray-200">
           {getMembersResponse?.data.map((it, i) => (
             <tr
               className={`${
                 i % 2 === 0 && "bg-white"
-              } bg-gray-100 hover:bg-gray-200`}
+              } bg-blue-50 hover:bg-gray-200`}
               key={it.id}
             >
               <td className="text-sm p-3">
@@ -338,13 +379,12 @@ export default function AdminAccounts() {
                   })}
                 </div>
               </td>
-              <td className="text-sm p-3">{it.first_name}</td>
-              <td className="text-sm p-3">{it.last_name}</td>
+              <td className="text-sm p-3 text-nowrap">
+                {it.first_name} {it.last_name}
+              </td>
               <td className="text-sm p-3">{it.email}</td>
-              <td className="text-sm p-3">{it.phone_number}</td>
+              <td className="text-sm p-3 text-nowrap">{it.phone_number}</td>
               <td className="text-sm p-3">{it.address}</td>
-              <td className="text-sm p-3">{it.gender}</td>
-              <td className="text-sm p-3">{it.plan}</td>
               <td className="text-sm p-3">
                 <span>{normalizeString(it.status)}</span>
               </td>

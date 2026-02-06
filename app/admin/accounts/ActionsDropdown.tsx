@@ -19,7 +19,7 @@ export const ActionsDropdown = ({
 }) => {
   return (
     <Dropdown
-      onSelect={(value: string) => {
+      onSelect={(value) => {
         if (value === "Edit") setEditMember(member);
         else if (value === "Delete") setDeleteMember(member);
       }}

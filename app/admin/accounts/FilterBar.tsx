@@ -4,6 +4,7 @@ import { Dropdown, DropdownOption } from "@/app/components/Dropdown";
 
 export enum FilterView {
   ALL = "All",
+  PENDING = "Pending",
   ACTIVE = "Active",
   WAITLIST = "Waitlist",
 }
@@ -16,6 +17,10 @@ const filterDropdownOptions: DropdownOption[] = [
   {
     label: "Active",
     value: FilterView.ACTIVE,
+  },
+  {
+    label: "Pending",
+    value: FilterView.PENDING,
   },
   {
     label: "Waitlist",
@@ -35,7 +40,7 @@ export const FilterBar = ({
   activeView: string;
 }) => {
   return (
-    <div className="flex items-center justify-between p-2">
+    <div className="flex bg-white rounded-t-xl items-center justify-between p-4">
       <input
         type="text"
         placeholder="Filter"
@@ -44,7 +49,7 @@ export const FilterBar = ({
         onChange={(e) => setFilter(e.target.value)}
       />
       <Dropdown
-        onSelect={(value: string) => setActiveView(value)}
+        onSelect={(value) => setActiveView(value as string)}
         label={activeView}
         value={activeView}
         options={filterDropdownOptions}

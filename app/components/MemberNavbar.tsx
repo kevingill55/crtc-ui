@@ -12,6 +12,8 @@ import {
   faNoteSticky,
   IconDefinition,
   faListCheck,
+  faUser,
+  faArrowRightFromBracket,
 } from "@fortawesome/free-solid-svg-icons";
 import { AppRouterInstance } from "next/dist/shared/lib/app-router-context.shared-runtime";
 import { PropsWithChildren } from "react";
@@ -48,10 +50,16 @@ function MemberNavMenuItem({
 
 function MenuNavAnchor({
   title,
+  isProfile = false,
   children,
-}: PropsWithChildren<{ title: string }>) {
+}: PropsWithChildren<{ isProfile?: boolean; title: string }>) {
   return (
-    <div className="group relative hover:cursor-pointer hover:text-primary hover:bg-white rounded-sm bg-transparent px-4 py-2 flex items-center gap-2">
+    <div
+      className={` group relative hover:cursor-pointer hover:text-primary hover:bg-white rounded-sm px-4 py-2 flex items-center gap-2 ${
+        isProfile && "border border-primary bg-stone-200"
+      }`}
+    >
+      {isProfile && <FontAwesomeIcon icon={faUser} />}
       <span>{title}</span>
       <div className="transition-transform duration-500 group-hover:rotate-180">
         <FontAwesomeIcon size="xs" icon={faAngleDown} />
@@ -63,7 +71,7 @@ function MenuNavAnchor({
 
 export default function MemberNavbar() {
   const router = useRouter();
-  const { isAdmin } = useProtectedRoute({ isAdmin: false });
+  const { isAdmin, user } = useProtectedRoute({ isAdmin: false });
   return (
     <nav className="pb-10 pt-5 px-8 w-full flex justify-center text-main text-sm">
       <div className="max-w-[1120px] w-full h-min flex justify-between items-center">
@@ -160,24 +168,30 @@ export default function MemberNavbar() {
               </div>
             </MenuNavAnchor>
           )}
-
-          <div className="group hover:cursor-pointer hover:text-primary hover:bg-white rounded-sm bg-transparent px-4 py-2 flex items-center gap-2">
-            <span>Contact</span>
-          </div>
         </div>
 
         <div className="flex items-center gap-2 w-min h-min">
-          <Link href="/logout">
-            <div className="group hover:cursor-pointer hover:text-primary hover:bg-white rounded-sm bg-transparent px-4 py-2 flex items-center gap-2">
-              <span className="text-nowrap">Log out</span>
-            </div>
-          </Link>
           <Link href="/member/reserve">
             <div className="group hover:cursor-pointer hover:bg-classic-tennis/80 text-white bg-classic-tennis rounded-sm shadow-xl px-4 py-2 flex items-center gap-2">
               <span className="text-nowrap">Reserve</span>
               <FontAwesomeIcon icon={faBookmark} />
             </div>
           </Link>
+          <MenuNavAnchor isProfile={true} title={user?.first_name || ""}>
+            <div className="hidden group-hover:block hover:block z-0 absolute w-[325px] top-full pt-4 left-0">
+              <div className="shadow-sm border rounded-xl border-gray-300 bg-white">
+                <div className="flex flex-col p-2 gap-2 text-gray-400">
+                  <MemberNavMenuItem
+                    route="/logout"
+                    icon={faArrowRightFromBracket}
+                    title="Log out"
+                    router={router}
+                    subtitle="Sign out of CRTC"
+                  />
+                </div>
+              </div>
+            </div>
+          </MenuNavAnchor>
         </div>
       </div>
     </nav>

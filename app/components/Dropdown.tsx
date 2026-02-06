@@ -6,7 +6,7 @@ import { normalizeString } from "../utils";
 
 export type DropdownOption = {
   label: string;
-  value: string;
+  value: string | number;
   subtext?: string;
 };
 
@@ -17,9 +17,9 @@ export const Dropdown = ({
   onSelect,
 }: {
   label: string;
-  value: string;
+  value: string | number;
   widthNum?: number;
-  onSelect: (val: string) => void;
+  onSelect: (val: string | number) => void;
   options: DropdownOption[];
 }) => {
   const [isOpen, setIsOpen] = useState(false);

@@ -1,5 +1,6 @@
 "use client";
 
+import { useMutation } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import { EmailInput, emailRegex } from "../components/EmailInput";
@@ -12,7 +13,6 @@ import {
 import { Member } from "../types";
 
 export default function SignUp() {
-  const [loading, setLoading] = useState(false);
   const [waiverAccepted, setWaiverAccepted] = useState(false);
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
@@ -25,6 +25,63 @@ export default function SignUp() {
   const router = useRouter();
 
   const { addNotification } = useNotificationsContext();
+
+  const { mutate: handleSignUp, isPending: loading } = useMutation({
+    mutationFn: async () => {
+      if (!emailRegex.test(email)) {
+        setEmailError("Please enter a valid email");
+        return;
+      }
+
+      try {
+        const addWaitlistFetch = await fetch("/api/members", {
+          method: "POST",
+          body: JSON.stringify({
+            email,
+            firstName,
+            lastName,
+            gender: gender === "F" ? "Female" : "Male",
+            phone,
+            plan: plan === "ADULT" ? "Adult" : "Junior",
+            address,
+          }),
+        });
+
+        const response: {
+          data: { entry: Member } | undefined;
+          error: { message: string; code: string };
+        } = await addWaitlistFetch.json();
+
+        if (response.error) {
+          if (response.error.code === "23505") {
+            addNotification({
+              id: "temp",
+              status: NotificationStatus.ERROR,
+              title: "A waitlist entry with that email already exists",
+            });
+          } else {
+            addNotification({
+              id: "temp",
+              status: NotificationStatus.ERROR,
+              title: "There was a problem adding you to the waitlist.",
+            });
+          }
+          return;
+        }
+        if (response.data?.entry) {
+          addNotification({
+            id: "temp",
+            status: NotificationStatus.SUCCESS,
+            title:
+              "You have been added to the waitlist. A confirmation will be sent to your email shortly.",
+          });
+          router.push("/");
+        }
+      } catch (error) {
+        console.error("There was an error signing up", error);
+      }
+    },
+  });
 
   const isDisabled = useMemo(() => {
     if (
@@ -40,66 +97,6 @@ export default function SignUp() {
     }
     return false;
   }, [waiverAccepted, plan, email, loading, phone, address, gender]);
-
-  async function handleSignUp() {
-    if (!emailRegex.test(email)) {
-      setEmailError("Please enter a valid email");
-      return;
-    }
-
-    setLoading(true);
-
-    try {
-      const addWaitlistFetch = await fetch("/api/waitlist", {
-        method: "POST",
-        body: JSON.stringify({
-          email,
-          firstName,
-          lastName,
-          gender,
-          phone,
-          plan,
-          address,
-        }),
-      });
-
-      const response: {
-        data: { entry: Member } | undefined;
-        error: { message: string; code: string };
-      } = await addWaitlistFetch.json();
-
-      if (response.error) {
-        if (response.error.code === "23505") {
-          addNotification({
-            id: "temp",
-            status: NotificationStatus.ERROR,
-            title: "A waitlist entry with that email already exists",
-          });
-        } else {
-          addNotification({
-            id: "temp",
-            status: NotificationStatus.ERROR,
-            title: "There was a problem adding you to the waitlist.",
-          });
-        }
-        setLoading(false);
-        return;
-      }
-      if (response.data?.entry) {
-        addNotification({
-          id: "temp",
-          status: NotificationStatus.SUCCESS,
-          title:
-            "You have been added to the waitlist. A confirmation will be sent to your email shortly.",
-        });
-        setLoading(false);
-        router.push("/");
-      }
-    } catch (error) {
-      setLoading(false);
-      console.error("There was an error signing up", error);
-    }
-  }
 
   return (
     <PublicPage>
@@ -262,7 +259,10 @@ export default function SignUp() {
           </div>
           <button
             disabled={isDisabled}
-            onClick={handleSignUp}
+            onClick={(e) => {
+              e.preventDefault();
+              handleSignUp();
+            }}
             className="w-full disabled:cursor-not-allowed disabled:bg-primary/50 hover:cursor-pointer hover:bg-primary/80 rounded-lg py-2 flex justify-center items-center bg-primary text-white"
           >
             {loading ? "Submitting..." : "Submit"}

@@ -11,6 +11,10 @@ import ProtectedPage from "@/app/components/ProtectedPage";
 import { sendMassEmail } from "@/app/actions/send-email";
 import "./temp.css";
 import { useMutation } from "@tanstack/react-query";
+import {
+  NotificationStatus,
+  useNotificationsContext,
+} from "@/app/providers/Notifications";
 
 const extensions = [
   StarterKit.configure({
@@ -155,6 +159,7 @@ const MenuBar = ({ editor }: { editor: Editor }) => {
 
 export default function AdminEmail() {
   const [sendToList, setSendToList] = useState("");
+  const { addNotification } = useNotificationsContext();
   const [subject, setSubject] = useState("");
   const { user } = useProtectedRoute({ isAdmin: true });
   const editor = useEditor({
@@ -172,12 +177,12 @@ export default function AdminEmail() {
       setSubject("");
       setSendToList("");
       editor?.commands.setContent("");
-      // addNotification({
-      //   status: NotificationStatus.SUCCESS,
-      //   id: "temp",
-      //   expiresIn: 5000,
-      //   title: "User deleted",
-      // });
+      addNotification({
+        status: NotificationStatus.SUCCESS,
+        id: "temp",
+        expiresIn: 5000,
+        title: "Email sent successfully",
+      });
     },
     mutationFn: async (content: string) => {
       const formData = new FormData();

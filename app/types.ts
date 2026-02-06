@@ -20,6 +20,11 @@ export enum MemberPlanType {
   JUNIOR = "Junior",
 }
 
+export enum ReservationStatus {
+  ACTIVE = "ACTIVE",
+  CANCELLED = "CANCELLED",
+}
+
 export type Member = {
   created_at: string;
   id: string;
@@ -34,4 +39,16 @@ export type Member = {
   plan: MemberPlanType;
   gender: MemberGender;
   status: MemberStatus;
+};
+
+export type Reservation = {
+  status: ReservationStatus;
+  id: string;
+  member_id: string;
+  slot: number;
+  court: number;
+  date: string;
+  name: string;
+  created_at: string;
+  players: string[];
 };

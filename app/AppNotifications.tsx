@@ -9,10 +9,10 @@ import {
 } from "./providers/Notifications";
 
 const getNotificationStyles = (status: NotificationStatus) => {
-  if (status === NotificationStatus.ERROR) return "bg-red-200/50";
-  if (status === NotificationStatus.SUCCESS) return "bg-green-200/50";
-  if (status === NotificationStatus.WARNING) return "bg-amber-200/50";
-  if (status === NotificationStatus.INFO) return "bg-blue-100/50";
+  if (status === NotificationStatus.ERROR) return "bg-red-200";
+  if (status === NotificationStatus.SUCCESS) return "bg-green-200";
+  if (status === NotificationStatus.WARNING) return "bg-amber-200";
+  if (status === NotificationStatus.INFO) return "bg-blue-100";
 };
 
 const ToastNotification = ({
