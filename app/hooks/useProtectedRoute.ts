@@ -22,6 +22,7 @@ export function useProtectedRoute({ isAdmin }: { isAdmin: boolean }) {
     isLoading: isSessionLoading,
   } = useQuery<{ error: AuthError | null; data: { session: Session } }>({
     queryKey: ["getSession"],
+    staleTime: 5 * 60 * 1000, // Don't refetch session constantly
     queryFn: () => supabase.auth.getSession(),
   });
 
@@ -32,7 +33,7 @@ export function useProtectedRoute({ isAdmin }: { isAdmin: boolean }) {
     isLoading: isUserLoading,
     isError: isUserError,
   } = useQuery<{ success: boolean; data: { member: Member } }>({
-    queryKey: ["getMember"],
+    queryKey: ["getMember", memberId],
     queryFn: async () => {
       return getMember(memberId);
     },

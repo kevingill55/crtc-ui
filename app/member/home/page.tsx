@@ -83,8 +83,8 @@ export const ReservationsCard = () => {
               <p className="text-sm text-gray-600">
                 {getDateString(item.date)}
               </p>
-              <div className="p-2 mt-1 bg-amber-100 flex border-l-4 hover:cursor-pointer hover:bg-amber-200 border-amber-300 rounded-lg w-full justify-between items-center">
-                <p className="text-lg">{item.name}</p>
+              <div className="p-2 mt-1 bg-blue-50 flex border-l-4 hover:cursor-pointer hover:bg-blue-100 border-blue-300 rounded-lg w-full justify-between items-center">
+                <p className="">{item.name}</p>
                 <div className="px-2 flex justify-end items-center gap-6">
                   <div className="text-gray-600 leading-4 text-end text-sm">
                     <p className="">{`Court ${item.court}`}</p>

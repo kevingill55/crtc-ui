@@ -52,3 +52,17 @@ export type Reservation = {
   created_at: string;
   players: string[];
 };
+
+export type Slot = {
+  reservationsByCourt: { [key: number]: Reservation };
+  slotIndex: number;
+  availableCourts: number;
+  isFull: boolean;
+  endTime: string;
+  startTime: string;
+};
+
+export type GetSlotsApiResponse = {
+  date: string;
+  slots: Slot[];
+};

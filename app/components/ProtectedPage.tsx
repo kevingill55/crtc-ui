@@ -29,9 +29,9 @@ const ProtectedPage = ({
   return (
     <Suspense fallback={<Loading />}>
       <main className="h-full min-w-full text-primary">
-        <div className="absolute inset-0 -z-10 h-full w-full bg-gray-100 bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] bg-size-[16px_16px]"></div>
+        <div className="fixed inset-0 -z-10 h-full w-full bg-gray-100 bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] bg-size-[16px_16px]"></div>
         <MemberNavbar />
-        <div className="w-full flex justify-center mt-6">
+        <div className="w-full flex justify-center">
           <div className="min-w-[600px] max-w-[1200px] px-8 w-full">
             <div className="pb-2 mb-4 w-full border-b border-zinc-300">
               <h1 className="text-2xl">{title}</h1>

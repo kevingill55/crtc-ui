@@ -364,7 +364,7 @@ export default function AdminAccounts() {
             <tr
               className={`${
                 i % 2 === 0 && "bg-white"
-              } bg-blue-50 hover:bg-gray-200`}
+              } bg-gray-200 hover:bg-blue-50`}
               key={it.id}
             >
               <td className="text-sm p-3">
