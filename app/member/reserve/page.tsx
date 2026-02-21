@@ -9,8 +9,9 @@ import {
 } from "@/app/providers/Notifications";
 import { apiFetch } from "@/app/clients/api";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
+import { Suspense, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
+import { Loading } from "@/app/components/Loading";
 import { toEasternISO } from "@/app/utils";
 import { PlayersMultiSelect } from "./PlayersMultiSelect";
 
@@ -72,7 +73,7 @@ const slotDropdownOptions: DropdownOption[] = [
   },
 ];
 
-export default function Reserve() {
+function ReserveForm() {
   const { addNotification } = useNotificationsContext();
   const queryClient = useQueryClient();
   const searchParams = useSearchParams();
@@ -247,5 +248,13 @@ export default function Reserve() {
         </div>
       </div>
     </ProtectedPage>
+  );
+}
+
+export default function Reserve() {
+  return (
+    <Suspense fallback={<Loading />}>
+      <ReserveForm />
+    </Suspense>
   );
 }
