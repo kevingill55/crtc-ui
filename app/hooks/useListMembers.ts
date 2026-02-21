@@ -1,4 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
+import { apiFetch } from "../clients/api";
+import { memberMatchesFilter } from "../utils";
 import { Member } from "../types";
 
 export const useListMembers = ({
@@ -17,10 +19,8 @@ export const useListMembers = ({
             a.first_name.localeCompare(b.first_name)
           ),
         };
-      const updatedResults = data.data.filter(
-        (it) =>
-          it.first_name.toLowerCase().includes(filter.trim().toLowerCase()) ||
-          it.last_name.toLowerCase().includes(filter)
+      const updatedResults = data.data.filter((it) =>
+        memberMatchesFilter(it, filter)
       );
       return {
         data: updatedResults.sort((a, b) =>
@@ -29,7 +29,7 @@ export const useListMembers = ({
       };
     },
     queryFn: async () => {
-      const listMembersFetch = await fetch(`/api/members?status=${status}`, {
+      const listMembersFetch = await apiFetch(`/api/members?status=${status}`, {
         method: "GET",
       });
 

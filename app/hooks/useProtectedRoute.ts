@@ -22,7 +22,7 @@ export function useProtectedRoute({ isAdmin }: { isAdmin: boolean }) {
     isLoading: isSessionLoading,
   } = useQuery<{ error: AuthError | null; data: { session: Session } }>({
     queryKey: ["getSession"],
-    staleTime: 5 * 60 * 1000, // Don't refetch session constantly
+    // staleTime: 5 * 60 * 1000, // Don't refetch session constantly
     queryFn: () => supabase.auth.getSession(),
   });
 

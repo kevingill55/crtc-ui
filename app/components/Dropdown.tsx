@@ -39,7 +39,7 @@ export const Dropdown = ({
   return (
     <div className="relative" ref={dropdownRef}>
       <div onClick={() => setIsOpen(!isOpen)}>
-        <div className="bg-white px-2.5 min-w-24 py-1.5 hover:cursor-pointer text-nowrap hover:bg-gray-200 flex items-center justify-center border rounded-lg border-gray-300 text-sm">
+        <div className="bg-white px-2.5 min-w-24 py-2 hover:cursor-pointer text-nowrap hover:bg-gray-200 flex items-center justify-center border rounded-lg border-gray-300 text-sm">
           {normalizeString(label) || "Select"}
           <FontAwesomeIcon
             icon={!isOpen ? faCaretDown : faCaretUp}

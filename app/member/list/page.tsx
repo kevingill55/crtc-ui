@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { apiFetch } from "@/app/clients/api";
 import ProtectedPage from "@/app/components/ProtectedPage";
 import { Member, MemberStatus } from "@/app/types";
 import { useListMembers } from "@/app/hooks/useListMembers";
@@ -38,7 +39,7 @@ export default function Members() {
       };
     },
     queryFn: async () => {
-      const listMembersFetch = await fetch(`/api/members?status=ACTIVE`, {
+      const listMembersFetch = await apiFetch(`/api/members?status=ACTIVE`, {
         method: "GET",
       });
 

@@ -1,5 +1,6 @@
 "use client";
 
+import { apiFetch } from "../clients/api";
 import { useMutation } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
@@ -34,14 +35,14 @@ export default function SignUp() {
       }
 
       try {
-        const addWaitlistFetch = await fetch("/api/members", {
+        const addWaitlistFetch = await apiFetch("/api/members", {
           method: "POST",
           body: JSON.stringify({
             email,
-            firstName,
-            lastName,
+            first_name: firstName,
+            last_name: lastName,
             gender: gender === "F" ? "Female" : "Male",
-            phone,
+            phone_number: phone,
             plan: plan === "ADULT" ? "Adult" : "Junior",
             address,
           }),

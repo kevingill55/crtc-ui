@@ -7,8 +7,11 @@ import {
   NotificationStatus,
   useNotificationsContext,
 } from "@/app/providers/Notifications";
+import { apiFetch } from "@/app/clients/api";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
+import { toEasternISO } from "@/app/utils";
 import { PlayersMultiSelect } from "./PlayersMultiSelect";
 
 const courtDropdownOptions: DropdownOption[] = [
@@ -69,24 +72,51 @@ const slotDropdownOptions: DropdownOption[] = [
   },
 ];
 
-// const MIN_DATE = new Date();
-const MAX_DATE = new Date();
-MAX_DATE.setDate(MAX_DATE.getDate() + 7);
-
 export default function Reserve() {
-  const { user } = useProtectedRoute({ isAdmin: false });
   const { addNotification } = useNotificationsContext();
   const queryClient = useQueryClient();
-  const [slot, setSlot] = useState(0);
-  const [name, setName] = useState("");
-  const [date, setDate] = useState("");
-  const [court, setCourt] = useState(0);
+  const searchParams = useSearchParams();
+  const [slot, setSlot] = useState(Number(searchParams.get("slot")) || 0);
+  const [date, setDate] = useState(searchParams.get("date") || "");
+  const [court, setCourt] = useState(Number(searchParams.get("court")) || 0);
   const [players, setPlayers] = useState<string[]>([]);
+
+  // Booking window: opens at 22:00 ET, 7 days before the target date.
+  // If it's past 22:00 ET now, today+7 is bookable; otherwise only through today+6.
+  const { minDate, maxDate } = useMemo(() => {
+    const now = new Date();
+    const etNow = new Date(
+      now.toLocaleString("en-US", { timeZone: "America/New_York" })
+    );
+    const daysAhead = etNow.getHours() >= 22 ? 7 : 6;
+    const max = new Date(now);
+    max.setDate(now.getDate() + daysAhead);
+    return { minDate: toEasternISO(now), maxDate: toEasternISO(max) };
+  }, []);
+
+  const dateStatus = useMemo(() => {
+    if (!date) return null;
+    if (date < minDate) return { valid: false, message: "Cannot book a date in the past." };
+    if (date > maxDate) {
+      // Compute when the window opens for this date: (date − 7 days) at 22:00 ET
+      const [y, m, d] = date.split("-").map(Number);
+      const opensDate = new Date(y, m - 1, d - 7).toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+      });
+      return { valid: false, message: `Booking window not yet open — opens ${opensDate} at 10:00 PM ET.` };
+    }
+    const [my, mm, md] = maxDate.split("-").map(Number);
+    const maxFormatted = new Date(my, mm - 1, md).toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+    });
+    return { valid: true, message: `Booking window open through ${maxFormatted}.` };
+  }, [date, minDate, maxDate]);
 
   const handleOnClear = () => {
     setPlayers([]);
     setDate("");
-    setName("");
     setSlot(0);
     setCourt(0);
   };
@@ -103,19 +133,16 @@ export default function Reserve() {
       });
     },
     mutationFn: async () => {
-      const createReservationFetch = await fetch(
-        `/api/reservations/${user?.id}`,
-        {
-          method: "POST",
-          body: JSON.stringify({
-            slot,
-            court,
-            name,
-            players,
-            date,
-          }),
-        }
-      );
+      const createReservationFetch = await apiFetch(`/api/reservations`, {
+        method: "POST",
+        body: JSON.stringify({
+          type: "REGULAR",
+          slot,
+          court,
+          players,
+          date,
+        }),
+      });
       return createReservationFetch.json();
     },
   });
@@ -143,23 +170,16 @@ export default function Reserve() {
                 id="crtc-reservation-date"
                 value={date}
                 onChange={(e) => setDate(e.target.value)}
-                type="text"
-                placeholder="YYYY-MM-DD"
+                type="date"
+                min={minDate}
+                max={maxDate}
                 className="px-4 py-2 rounded-lg border border-gray-300 focus:outline-1 focus:outline-primary hover:border-gray-500"
               />
-            </div>
-            <div className="flex flex-col w-full gap-2">
-              <label htmlFor="crtc-reservation-name" className="text-gray-600">
-                Name
-              </label>
-              <input
-                id="crtc-reservation-name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                type="text"
-                placeholder="Enter a name for your reservation"
-                className="px-4 py-2 rounded-lg border border-gray-300 focus:outline-1 focus:outline-primary hover:border-gray-500"
-              />
+              {dateStatus && (
+                <p className={`text-xs ${dateStatus.valid ? "text-gray-400" : "text-amber-600"}`}>
+                  {dateStatus.message}
+                </p>
+              )}
             </div>
           </div>
           <div className="flex gap-4 w-full">
@@ -218,7 +238,8 @@ export default function Reserve() {
             </button>
             <button
               onClick={() => createReservation()}
-              className="hover:cursor-pointer hover:bg-primary/80 border border-primary rounded-lg py-2 px-6 text-sm flex justify-center items-center bg-primary text-white"
+              disabled={!dateStatus?.valid}
+              className="hover:cursor-pointer hover:bg-primary/80 border border-primary rounded-lg py-2 px-6 text-sm flex justify-center items-center bg-primary text-white disabled:opacity-40 disabled:cursor-not-allowed"
             >
               Submit
             </button>

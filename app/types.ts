@@ -66,3 +66,9 @@ export type GetSlotsApiResponse = {
   date: string;
   slots: Slot[];
 };
+
+export type DayAvailability = {
+  date: string;
+  bookedSlots: number;
+  totalSlots: number;
+};

@@ -1,4 +1,5 @@
 "use client";
+import { apiFetch } from "@/app/clients/api";
 import { useProtectedRoute } from "@/app/hooks/useProtectedRoute";
 import { Reservation } from "@/app/types";
 import { faCircleExclamation } from "@fortawesome/free-solid-svg-icons";
@@ -8,8 +9,12 @@ import ProtectedPage from "../../components/ProtectedPage";
 
 const getDateString = (str: string) => {
   const date = new Date(str + "T00:00:00");
-  const options = { year: "numeric", month: "long", day: "numeric" };
-  // @ts-expect-error For absolutely no reason.
+  const options: Intl.DateTimeFormatOptions = {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+    timeZone: "America/New_York",
+  };
   return date.toLocaleDateString("en-US", options);
 };
 
@@ -34,7 +39,7 @@ export const ReservationsCard = () => {
   }>({
     queryKey: ["getUpcomingReservations"],
     queryFn: async () => {
-      const getUpcomingReservations = await fetch(
+      const getUpcomingReservations = await apiFetch(
         `/api/reservations/${user?.id}`,
         { method: "GET" }
       );

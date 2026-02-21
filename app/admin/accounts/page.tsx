@@ -16,7 +16,8 @@ import {
   MemberPlanType,
   MemberStatus,
 } from "@/app/types";
-import { normalizeString } from "@/app/utils";
+import { apiFetch } from "@/app/clients/api";
+import { memberMatchesFilter, normalizeString } from "@/app/utils";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { ActionsDropdown } from "./ActionsDropdown";
@@ -230,10 +231,8 @@ export default function AdminAccounts() {
             a.first_name.localeCompare(b.first_name)
           ),
         };
-      const updatedResults = data.data.filter(
-        (it) =>
-          it.first_name.toLowerCase().includes(filter.trim().toLowerCase()) ||
-          it.last_name.toLowerCase().includes(filter)
+      const updatedResults = data.data.filter((it) =>
+        memberMatchesFilter(it, filter)
       );
       return {
         data: updatedResults.sort((a, b) =>
@@ -242,11 +241,9 @@ export default function AdminAccounts() {
       };
     },
     queryFn: async () => {
-      const listMembersFetch = await fetch(
+      const listMembersFetch = await apiFetch(
         `/api/members?status=${activeView.toUpperCase()}`,
-        {
-          method: "GET",
-        }
+        { method: "GET" }
       );
 
       return listMembersFetch.json();
@@ -265,7 +262,7 @@ export default function AdminAccounts() {
       setDeleteMember(null);
     },
     mutationFn: async (member: Member) => {
-      const deleteUserFetch = await fetch(`/api/members/${member.id}`, {
+      const deleteUserFetch = await apiFetch(`/api/members/${member.id}`, {
         method: "DELETE",
       });
 
@@ -285,7 +282,7 @@ export default function AdminAccounts() {
       setEditMember(null);
     },
     mutationFn: async (member: Member) => {
-      const updateUserFetch = await fetch(`/api/members/${member.id}`, {
+      const updateUserFetch = await apiFetch(`/api/members/${member.id}`, {
         method: "PUT",
         body: JSON.stringify(member),
       });
@@ -305,7 +302,7 @@ export default function AdminAccounts() {
       setEditMember(null);
     },
     mutationFn: async (memberId: string) => {
-      const createAccountFetch = await fetch(`/api/accounts/${memberId}`, {
+      const createAccountFetch = await apiFetch(`/api/accounts/${memberId}`, {
         method: "POST",
       });
 
@@ -384,7 +381,7 @@ export default function AdminAccounts() {
               </td>
               <td className="text-sm p-3">{it.email}</td>
               <td className="text-sm p-3 text-nowrap">{it.phone_number}</td>
-              <td className="text-sm p-3">{it.address}</td>
+              <td className="text-sm p-3 text-nowrap">{it.address}</td>
               <td className="text-sm p-3">
                 <span>{normalizeString(it.status)}</span>
               </td>

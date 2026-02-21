@@ -1,4 +1,6 @@
 "use client";
+import { apiFetch } from "@/app/clients/api";
+import { memberMatchesFilter } from "@/app/utils";
 import { Member } from "@/app/types";
 import { faCaretDown, faCaretUp } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -33,10 +35,8 @@ export const PlayersMultiSelect = ({
             return a.first_name.localeCompare(b.first_name);
           }),
         };
-      const updatedResults = data.data.filter(
-        (it) =>
-          it.first_name.toLowerCase().includes(filter.trim().toLowerCase()) ||
-          it.last_name.toLowerCase().includes(filter)
+      const updatedResults = data.data.filter((it) =>
+        memberMatchesFilter(it, filter)
       );
       return {
         data: updatedResults.sort((a, b) => {
@@ -51,7 +51,7 @@ export const PlayersMultiSelect = ({
       };
     },
     queryFn: async () => {
-      const getActiveMembersFetch = await fetch(`/api/members?status=ACTIVE`, {
+      const getActiveMembersFetch = await apiFetch(`/api/members?status=ACTIVE`, {
         method: "GET",
       });
 

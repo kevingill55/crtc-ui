@@ -60,7 +60,7 @@ function MenuNavAnchor({
       }`}
     >
       {isProfile && <FontAwesomeIcon icon={faUser} />}
-      <span>{title}</span>
+      <span className="text-nowrap">{title}</span>
       <div className="transition-transform duration-500 group-hover:rotate-180">
         <FontAwesomeIcon size="xs" icon={faAngleDown} />
       </div>
