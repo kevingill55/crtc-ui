@@ -14,6 +14,7 @@ import {
   faListCheck,
   faUser,
   faArrowRightFromBracket,
+  faTrophy,
 } from "@fortawesome/free-solid-svg-icons";
 import { AppRouterInstance } from "next/dist/shared/lib/app-router-context.shared-runtime";
 import { PropsWithChildren } from "react";
@@ -138,6 +139,13 @@ export default function MemberNavbar() {
                     title="Meeting notes"
                     router={router}
                     subtitle="Notes from all board and club meetings"
+                  />
+                  <MemberNavMenuItem
+                    route="/member/leagues"
+                    icon={faTrophy}
+                    title="Leagues"
+                    router={router}
+                    subtitle="View league rosters and manage your enrollment"
                   />
                 </div>
               </div>

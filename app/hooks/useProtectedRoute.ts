@@ -61,6 +61,8 @@ export function useProtectedRoute({ isAdmin }: { isAdmin: boolean }) {
     user: userData?.data.member,
     isActive: userData?.data.member.status === MemberStatus.ACTIVE || false,
     isAdmin: userData?.data.member.role === MemberRole.ADMIN || false,
+    isLeagueCoordinator:
+      userData?.data.member.role === MemberRole.LEAGUE_COORDINATOR || false,
     error: isUserError || isSessionError,
     loading: isUserLoading || isSessionLoading,
   };

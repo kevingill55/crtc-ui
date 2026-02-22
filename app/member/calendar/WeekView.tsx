@@ -38,10 +38,7 @@ export default function WeekView({
     });
   }, [currentDate]);
 
-  const weekDateIsos = useMemo(
-    () => weekDates.map(toEasternISO),
-    [weekDates]
-  );
+  const weekDateIsos = useMemo(() => weekDates.map(toEasternISO), [weekDates]);
 
   const today = toEasternISO(new Date());
 
@@ -67,7 +64,7 @@ export default function WeekView({
       <table className="w-full border-collapse">
         <thead>
           <tr>
-            <th className="bg-primary text-white text-sm font-medium p-3 w-24 text-left">
+            <th className="bg-primary text-white text-sm font-medium p-3 w-24 text-center">
               Time
             </th>
             {weekDates.map((d, i) => {

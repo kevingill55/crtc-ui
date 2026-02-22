@@ -6,6 +6,7 @@ import { apiFetch } from "@/app/clients/api";
 import ProtectedPage from "@/app/components/ProtectedPage";
 import { Member, MemberStatus } from "@/app/types";
 import { useListMembers } from "@/app/hooks/useListMembers";
+import { memberMatchesFilter } from "@/app/utils";
 
 const AccountTableHeading = ({ title }: { title: string }) => (
   <th className="p-2 leading-4 text-nowrap text-sm font-medium text-center">
@@ -27,10 +28,8 @@ export default function Members() {
             a.first_name.localeCompare(b.first_name)
           ),
         };
-      const updatedResults = data.data.filter(
-        (it) =>
-          it.first_name.toLowerCase().includes(filter.trim().toLowerCase()) ||
-          it.last_name.toLowerCase().includes(filter)
+      const updatedResults = data.data.filter((it) =>
+        memberMatchesFilter(it, filter)
       );
       return {
         data: updatedResults.sort((a, b) =>
@@ -65,7 +64,6 @@ export default function Members() {
             <AccountTableHeading title={"Email"} />
             <AccountTableHeading title={"Phone"} />
             <AccountTableHeading title={"Address"} />
-            <AccountTableHeading title={"Rating"} />
             <AccountTableHeading title={"Gender"} />
           </tr>
         </thead>
@@ -85,9 +83,6 @@ export default function Members() {
                 {it.phone_number}
               </td>
               <td className="text-sm text-center p-3">{it.address}</td>
-              <td className="text-sm text-center p-3">
-                {it.rating ? it.rating.toFixed(1) : ""}
-              </td>
               <td className="text-sm text-center p-3">{it.gender}</td>
             </tr>
           ))}

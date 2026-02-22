@@ -8,6 +8,7 @@ export enum MemberStatus {
 export enum MemberRole {
   ADMIN = "ADMIN",
   MEMBER = "MEMBER",
+  LEAGUE_COORDINATOR = "LEAGUE_COORDINATOR",
 }
 
 export enum MemberGender {
@@ -71,4 +72,36 @@ export type DayAvailability = {
   date: string;
   bookedSlots: number;
   totalSlots: number;
+};
+
+export type League = {
+  id: string;
+  name: string;
+  coordinator_id: string | null;
+  coordinator: { first_name: string; last_name: string } | null;
+};
+
+export type LeagueSeason = {
+  id: string;
+  league_id: string;
+  name: string;
+  status: "DRAFT" | "ENROLLMENT_OPEN" | "ACTIVE" | "COMPLETED";
+  start_date: string | null;
+  end_date: string | null;
+  max_players: number | null;
+  created_at: string;
+};
+
+export type LeagueEnrollment = {
+  id: string;
+  season_id: string;
+  member_id: string;
+  status: "ACTIVE" | "WAITLISTED" | "WITHDRAWN";
+  enrolled_at: string;
+  members: {
+    id: string;
+    first_name: string;
+    last_name: string;
+    email: string;
+  } | null;
 };
