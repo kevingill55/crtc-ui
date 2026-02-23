@@ -25,7 +25,7 @@ export function SlotCourtGrid({
 }) {
   return (
     <div className="overflow-x-auto">
-      <table className="border-collapse text-sm">
+      <table className="border-collapse">
         <thead>
           <tr>
             <th className="text-left pr-4 pb-2 text-gray-500 font-medium w-36"></th>
@@ -44,7 +44,7 @@ export function SlotCourtGrid({
             const slot = slotIdx + 1;
             return (
               <tr key={slot}>
-                <td className="pr-4 py-1 text-gray-600 text-xs whitespace-nowrap">
+                <td className="pr-4 py-1 text-gray-600 text-sm whitespace-nowrap">
                   {label}
                 </td>
                 {COURTS.map((court) => {

@@ -8,11 +8,7 @@ import {
   useNotificationsContext,
 } from "@/app/providers/Notifications";
 import { apiFetch } from "@/app/clients/api";
-import {
-  useMutation,
-  useQuery,
-  useQueryClient,
-} from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Suspense, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { Loading } from "@/app/components/Loading";
@@ -48,20 +44,21 @@ function ReserveForm() {
   const { user, isAdmin } = useProtectedRoute({ isAdmin: false });
   const isLeagueCoordinator = user?.role === MemberRole.LEAGUE_COORDINATOR;
 
-  // Coordinators choose between booking a league event or a personal court time.
-  const [bookingMode, setBookingMode] = useState<"league" | "personal">(
-    "league"
-  );
-  const [selectedLeagueId, setSelectedLeagueId] = useState<string | null>(
-    null
-  );
+  // Coordinators and admins choose between their elevated event type or a personal court time.
+  const [bookingMode, setBookingMode] = useState<
+    "league" | "club" | "personal"
+  >("league");
+
+  // Default admins to "club" mode once the role is known.
+  useEffect(() => {
+    if (isAdmin) setBookingMode("club");
+  }, [isAdmin]);
+  const [selectedLeagueId, setSelectedLeagueId] = useState<string | null>(null);
 
   // Show the league/club multi-slot form vs the regular single-slot form.
-  const showLeagueForm =
-    isAdmin || (isLeagueCoordinator && bookingMode === "league");
+  const showLeagueForm = bookingMode === "league" || bookingMode === "club";
   // Skip the 7-day booking window when booking as league/admin.
-  const skipBookingWindow =
-    isAdmin || (isLeagueCoordinator && bookingMode === "league");
+  const skipBookingWindow = showLeagueForm;
 
   const [date, setDate] = useState(searchParams.get("date") || "");
   const [slot, setSlot] = useState(Number(searchParams.get("slot")) || 0);
@@ -202,14 +199,14 @@ function ReserveForm() {
     setRepeatWeeks(4);
   };
 
-  const handleModeSwitch = (mode: "league" | "personal") => {
+  const handleModeSwitch = (mode: "league" | "club" | "personal") => {
     setBookingMode(mode);
     setDate("");
     setSlot(0);
     setCourt(0);
     setSelectedCells(new Set());
     setPlayers([]);
-    setReservationName(mode === "league" ? (selectedLeague?.name ?? "") : "");
+    setReservationName(mode === "league" ? selectedLeague?.name ?? "" : "");
   };
 
   const { mutate: createReservation, isPending } = useMutation({
@@ -304,18 +301,18 @@ function ReserveForm() {
               : "Create reservations and include all members of your party; you can only reserve court time once per day."}
           </p>
 
-          {/* Mode toggle — coordinators only */}
-          {isLeagueCoordinator && (
+          {/* Mode toggle — admins and coordinators */}
+          {(isAdmin || isLeagueCoordinator) && (
             <div className="mt-3 flex gap-1 bg-gray-100 rounded-lg p-1 w-fit">
               <button
-                onClick={() => handleModeSwitch("league")}
+                onClick={() => handleModeSwitch(isAdmin ? "club" : "league")}
                 className={`px-4 py-1.5 rounded-md text-sm font-medium transition-colors hover:cursor-pointer ${
-                  bookingMode === "league"
+                  bookingMode !== "personal"
                     ? "bg-white text-primary shadow-sm"
                     : "text-gray-500 hover:text-gray-700"
                 }`}
               >
-                League event
+                {isAdmin ? "Club event" : "League event"}
               </button>
               <button
                 onClick={() => handleModeSwitch("personal")}
@@ -351,7 +348,7 @@ function ReserveForm() {
           )}
         </div>
 
-        <div className="bg-white flex flex-col min-w-160 w-3/4 gap-6 rounded-lg p-8">
+        <div className="bg-white flex flex-col min-w-160 w-full gap-6 rounded-lg p-8">
           {/* League picker — only shown when coordinator has multiple leagues */}
           {isLeagueCoordinator &&
             bookingMode === "league" &&
@@ -382,7 +379,7 @@ function ReserveForm() {
               type="date"
               min={minDate}
               max={skipBookingWindow ? undefined : maxDate}
-              className="w-48 px-4 py-2 rounded-lg border border-gray-300 focus:outline-1 focus:outline-primary hover:border-gray-500"
+              className="w-52 px-4 py-2 rounded-lg border border-gray-300 focus:outline-1 focus:outline-primary hover:border-gray-500"
             />
             {dateStatus?.message && (
               <p
@@ -399,7 +396,7 @@ function ReserveForm() {
           {!showLeagueForm ? (
             /* REGULAR form */
             <div className="flex flex-col gap-3">
-              <div className="flex gap-4 w-full">
+              <div className="flex flex-col gap-4 w-full">
                 <div className="w-1/2">
                   <label className="text-gray-600">Court</label>
                   <Dropdown
@@ -439,20 +436,17 @@ function ReserveForm() {
           ) : (
             /* LEAGUE / CLUB form */
             <div className="flex flex-col gap-4">
-              <div>
-                <label className="text-gray-600">Reservation name</label>
+              <div className="flex flex-col mb-2">
+                <label className="text-gray-600">Event name</label>
                 <input
                   type="text"
-                  placeholder="League match / Club event"
+                  placeholder="Club event"
                   value={reservationName}
                   onChange={(e) => setReservationName(e.target.value)}
-                  className="w-full mt-1 px-4 py-2 rounded-lg border border-gray-300 focus:outline-1 focus:outline-primary hover:border-gray-500"
+                  className="w-1/2 mt-1 px-4 py-2 rounded-lg border border-gray-300 focus:outline-1 focus:outline-primary hover:border-gray-500"
                 />
               </div>
               <div>
-                <label className="text-gray-600 block mb-2">
-                  Select slots and courts
-                </label>
                 <SlotCourtGrid
                   selectedCells={selectedCells}
                   onToggle={handleToggleCell}
@@ -468,8 +462,8 @@ function ReserveForm() {
             </div>
           )}
 
-          {/* Recurring option — admin only */}
-          {isAdmin && (
+          {/* Recurring option — admin club events only */}
+          {isAdmin && bookingMode === "club" && (
             <div className="flex items-center gap-4">
               <label className="flex items-center gap-2 text-gray-600 cursor-pointer">
                 <input
@@ -502,7 +496,7 @@ function ReserveForm() {
           )}
 
           {/* Players */}
-          <div className="flex w-full">
+          <div className="flex w-1/2">
             <div className="w-full">
               <label className="text-gray-600">Players</label>
               <PlayersMultiSelect
