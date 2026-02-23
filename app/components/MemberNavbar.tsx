@@ -8,6 +8,7 @@ import {
   faBookmark,
   faMoon,
   faCalendar,
+  faCalendarCheck,
   faEnvelope,
   faNoteSticky,
   IconDefinition,
@@ -86,7 +87,7 @@ export default function MemberNavbar() {
             </div>
           </Link>
           <MenuNavAnchor title="Tennis">
-            <div className="hidden group-hover:block hover:block z-0 absolute w-[325px] top-full pt-4 left-0">
+            <div className="hidden group-hover:block hover:block z-50 absolute w-[325px] top-full pt-4 left-0">
               <div className="shadow-sm border rounded-xl border-gray-300 bg-white">
                 <div className="flex flex-col p-2 gap-2 text-gray-400">
                   <MemberNavMenuItem
@@ -123,7 +124,7 @@ export default function MemberNavbar() {
             </div>
           </MenuNavAnchor>
           <MenuNavAnchor title="Club">
-            <div className="hidden group-hover:block hover:block z-0 absolute w-[325px] top-full pt-4 left-0">
+            <div className="hidden group-hover:block hover:block z-50 absolute w-[325px] top-full pt-4 left-0">
               <div className="shadow-sm border rounded-xl border-gray-300 bg-white">
                 <div className="flex flex-col p-2 gap-2 text-gray-400">
                   <MemberNavMenuItem
@@ -154,7 +155,7 @@ export default function MemberNavbar() {
 
           {isAdmin && (
             <MenuNavAnchor title="Admin">
-              <div className="hidden group-hover:block hover:block z-0 absolute w-[325px] top-full pt-4 left-0">
+              <div className="hidden group-hover:block hover:block z-50 absolute w-[325px] top-full pt-4 left-0">
                 <div className="shadow-sm border rounded-xl border-gray-300 bg-white">
                   <div className="flex flex-col p-2 gap-2 text-gray-400">
                     <MemberNavMenuItem
@@ -186,9 +187,16 @@ export default function MemberNavbar() {
             </div>
           </Link>
           <MenuNavAnchor isProfile={true} title={user?.first_name || ""}>
-            <div className="hidden group-hover:block hover:block z-0 absolute w-[325px] top-full pt-4 left-0">
+            <div className="hidden group-hover:block hover:block z-50 absolute w-[325px] top-full pt-4 left-0">
               <div className="shadow-sm border rounded-xl border-gray-300 bg-white">
                 <div className="flex flex-col p-2 gap-2 text-gray-400">
+                  <MemberNavMenuItem
+                    route="/member/reservations"
+                    icon={faCalendarCheck}
+                    title="Schedule"
+                    router={router}
+                    subtitle="View and manage your upcoming court time"
+                  />
                   <MemberNavMenuItem
                     route="/logout"
                     icon={faArrowRightFromBracket}

@@ -9,7 +9,7 @@ const ProtectedPage = ({
   isAdmin,
   children,
 }: PropsWithChildren<{
-  title: string;
+  title?: string;
   subtitle?: string;
   isAdmin?: boolean;
 }>) => {
@@ -33,10 +33,12 @@ const ProtectedPage = ({
         <MemberNavbar />
         <div className="w-full flex justify-center">
           <div className="min-w-[600px] max-w-[1200px] px-8 w-full">
-            <div className="pb-2 mb-4 w-full border-b border-zinc-300">
-              <h1 className="text-2xl">{title}</h1>
-              {subtitle && <p className="text-zinc-600">{subtitle}</p>}
-            </div>
+            {title && (
+              <div className="pb-2 mb-4 w-full border-b border-zinc-300">
+                <h1 className="text-2xl">{title}</h1>
+                {subtitle && <p className="text-zinc-600">{subtitle}</p>}
+              </div>
+            )}
             {children}
           </div>
         </div>

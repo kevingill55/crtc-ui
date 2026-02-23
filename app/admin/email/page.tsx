@@ -5,16 +5,18 @@ import type { Editor } from "@tiptap/react";
 import { Placeholder } from "@tiptap/extension-placeholder";
 import { EditorContent, useEditor, useEditorState } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useProtectedRoute } from "../../hooks/useProtectedRoute";
 import ProtectedPage from "@/app/components/ProtectedPage";
 import { sendMassEmail } from "@/app/actions/send-email";
 import "./temp.css";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueries, useQuery } from "@tanstack/react-query";
 import {
   NotificationStatus,
   useNotificationsContext,
 } from "@/app/providers/Notifications";
+import { apiFetch } from "@/app/clients/api";
+import { League, LeagueEnrollment, Member } from "@/app/types";
 
 const extensions = [
   StarterKit.configure({
@@ -26,7 +28,8 @@ const extensions = [
   }),
   Placeholder.configure({
     placeholder: "Write your email here...",
-    emptyEditorClass: "text-gray-600",
+    // Adds this class to the editor element when empty — matched by the ::before rule in temp.css
+    emptyEditorClass: "is-editor-empty",
   }),
   TextStyleKit,
 ];
@@ -56,7 +59,6 @@ const MenuBarButton = ({
 };
 
 const MenuBar = ({ editor }: { editor: Editor }) => {
-  // Read the current editor's state, and re-render the component when it changes
   const editorState = useEditorState({
     editor,
     selector: (ctx) => {
@@ -157,25 +159,145 @@ const MenuBar = ({ editor }: { editor: Editor }) => {
   );
 };
 
+function RecipientChip({
+  label,
+  count,
+  selected,
+  loading,
+  onClick,
+}: {
+  label: string;
+  count: number | null;
+  selected: boolean;
+  loading: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      disabled={loading}
+      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors hover:cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed ${
+        selected
+          ? "bg-primary text-white"
+          : "bg-gray-200 text-gray-600 hover:bg-gray-300"
+      }`}
+    >
+      {label}
+      <span
+        className={`text-xs px-1.5 py-0.5 rounded-full ${
+          selected ? "bg-white/20" : "bg-gray-300 text-gray-500"
+        }`}
+      >
+        {loading || count === null ? "–" : count}
+      </span>
+    </button>
+  );
+}
+
 export default function AdminEmail() {
-  const [sendToList, setSendToList] = useState("");
-  const { addNotification } = useNotificationsContext();
+  const [selectedGroups, setSelectedGroups] = useState<Set<string>>(new Set());
   const [subject, setSubject] = useState("");
+  const { addNotification } = useNotificationsContext();
   const { user } = useProtectedRoute({ isAdmin: true });
+
   const editor = useEditor({
     extensions,
     immediatelyRender: false,
     editorProps: {
       attributes: {
-        class: "prose prose-lg focus:outline-none list-disc m-0 p-0",
+        // "tiptap" activates the selectors in temp.css
+        class: "tiptap prose prose-lg focus:outline-none m-0 p-0 min-h-[200px]",
       },
     },
   });
 
+  // ── Recipient data ──────────────────────────────────────────────────────────
+
+  const { data: activeMembersData, isLoading: activeMembersLoading } =
+    useQuery<{ data: Member[] }>({
+      queryKey: ["getMembers", "active"],
+      queryFn: async () => {
+        const res = await apiFetch("/api/members?status=ACTIVE", {
+          method: "GET",
+        });
+        return res.json();
+      },
+    });
+  const activeMembers = activeMembersData?.data ?? [];
+
+  const { data: waitlistMembersData, isLoading: waitlistLoading } =
+    useQuery<{ data: Member[] }>({
+      queryKey: ["getMembers", "waitlist"],
+      queryFn: async () => {
+        const res = await apiFetch("/api/members?status=WAITLIST", {
+          method: "GET",
+        });
+        return res.json();
+      },
+    });
+  const waitlistMembers = waitlistMembersData?.data ?? [];
+
+  const { data: leaguesData, isLoading: leaguesLoading } = useQuery<{
+    success: boolean;
+    data: League[];
+  }>({
+    queryKey: ["getLeagues"],
+    queryFn: async () => {
+      const res = await apiFetch("/api/leagues", { method: "GET" });
+      return res.json();
+    },
+  });
+  const leagues = leaguesData?.data ?? [];
+
+  const leagueRosterResults = useQueries({
+    queries: leagues.map((league) => ({
+      queryKey: ["leagueRoster", league.id],
+      queryFn: async () => {
+        const res = await apiFetch(`/api/leagues/${league.id}/roster`, {
+          method: "GET",
+        });
+        return res.json() as Promise<{
+          success: boolean;
+          data: LeagueEnrollment[];
+        }>;
+      },
+    })),
+  });
+
+  // ── Computed recipient list ─────────────────────────────────────────────────
+
+  const recipientEmails = useMemo(() => {
+    const emailSet = new Set<string>();
+    if (selectedGroups.has("active")) {
+      activeMembers.forEach((m) => emailSet.add(m.email));
+    }
+    if (selectedGroups.has("waitlist")) {
+      waitlistMembers.forEach((m) => emailSet.add(m.email));
+    }
+    leagues.forEach((league, i) => {
+      if (selectedGroups.has(`league-${league.id}`)) {
+        (leagueRosterResults[i]?.data?.data ?? []).forEach((e) => {
+          if (e.members?.email) emailSet.add(e.members.email);
+        });
+      }
+    });
+    return [...emailSet];
+  }, [selectedGroups, activeMembers, waitlistMembers, leagues, leagueRosterResults]);
+
+  const toggleGroup = (id: string) => {
+    setSelectedGroups((prev) => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  };
+
+  // ── Mutation ────────────────────────────────────────────────────────────────
+
   const { mutate: submitEmail } = useMutation({
     onSuccess: () => {
       setSubject("");
-      setSendToList("");
+      setSelectedGroups(new Set());
       editor?.commands.setContent("");
       addNotification({
         status: NotificationStatus.SUCCESS,
@@ -188,45 +310,101 @@ export default function AdminEmail() {
       const formData = new FormData();
       formData.append("body", content);
       formData.append("subject", subject);
-      formData.append("recipients", sendToList);
+      formData.append("recipients", recipientEmails.join(", "));
       await sendMassEmail(formData);
     },
   });
 
   if (!user || !editor) return null;
 
-  const handleOnClick = () => {
-    const htmlContent = editor.getHTML();
-    submitEmail(htmlContent);
+  const handleSend = () => {
+    if (recipientEmails.length === 0) {
+      addNotification({
+        status: NotificationStatus.ERROR,
+        id: "temp",
+        expiresIn: 4000,
+        title: "Select at least one recipient group before sending",
+      });
+      return;
+    }
+    submitEmail(editor.getHTML());
+  };
+
+  const handleClear = () => {
+    setSelectedGroups(new Set());
+    setSubject("");
+    editor.commands.setContent("");
   };
 
   return (
     <ProtectedPage title="Email">
-      <div className="w-full border rounded-xl border-zinc-200 bg-zinc-100 shadow-lg p-6">
-        <div className="flex items-center gap-2 w-full mb-4">
-          <input
-            id="crtc-admin-email-subject"
-            value={sendToList}
-            onChange={(e) => {
-              setSendToList(e.target.value);
-            }}
-            type="text"
-            placeholder="Recipients"
-            className="px-4 py-2 w-1/2 rounded-lg border border-gray-200 focus:outline-1 focus:outline-primary hover:border-gray-400"
-          />
+      <div className="w-full border rounded-xl border-zinc-200 bg-zinc-100 shadow-lg p-6 flex flex-col gap-5">
+        {/* Recipients */}
+        <div className="flex flex-col gap-2">
+          <p className="text-sm text-gray-500">Recipients</p>
+
+          {/* Member groups */}
+          <div className="flex flex-wrap gap-2">
+            <RecipientChip
+              label="All active members"
+              count={activeMembersLoading ? null : activeMembers.length}
+              selected={selectedGroups.has("active")}
+              loading={activeMembersLoading}
+              onClick={() => toggleGroup("active")}
+            />
+            <RecipientChip
+              label="Club waitlist"
+              count={waitlistLoading ? null : waitlistMembers.length}
+              selected={selectedGroups.has("waitlist")}
+              loading={waitlistLoading}
+              onClick={() => toggleGroup("waitlist")}
+            />
+          </div>
+
+          {/* League groups */}
+          {leaguesLoading ? (
+            <p className="text-xs text-gray-400">Loading leagues...</p>
+          ) : (
+            <div className="flex flex-wrap gap-2">
+              {leagues.map((league, i) => {
+                const result = leagueRosterResults[i];
+                return (
+                  <RecipientChip
+                    key={league.id}
+                    label={league.name}
+                    count={
+                      result?.isLoading ? null : (result?.data?.data?.length ?? 0)
+                    }
+                    selected={selectedGroups.has(`league-${league.id}`)}
+                    loading={result?.isLoading ?? false}
+                    onClick={() => toggleGroup(`league-${league.id}`)}
+                  />
+                );
+              })}
+            </div>
+          )}
+
+          <p
+            className={`text-xs ${
+              selectedGroups.size === 0 ? "text-amber-600" : "text-gray-500"
+            }`}
+          >
+            {selectedGroups.size === 0
+              ? "No recipients selected"
+              : `${recipientEmails.length} unique recipient${recipientEmails.length !== 1 ? "s" : ""}`}
+          </p>
         </div>
-        <div className="flex items-center gap-2 w-full mb-4">
-          <input
-            id="crtc-admin-email-subject"
-            value={subject}
-            onChange={(e) => {
-              setSubject(e.target.value);
-            }}
-            type="text"
-            placeholder="Subject"
-            className="px-4 py-2 w-1/2 rounded-lg border border-gray-200 focus:outline-1 focus:outline-primary hover:border-gray-400"
-          />
-        </div>
+
+        {/* Subject */}
+        <input
+          value={subject}
+          onChange={(e) => setSubject(e.target.value)}
+          type="text"
+          placeholder="Subject"
+          className="px-4 py-2 w-1/2 rounded-lg border border-gray-200 focus:outline-1 focus:outline-primary hover:border-gray-400"
+        />
+
+        {/* Editor */}
         <div className="prose flex flex-col gap-4">
           <MenuBar editor={editor} />
           <EditorContent
@@ -235,18 +413,19 @@ export default function AdminEmail() {
           />
         </div>
       </div>
+
       <div className="flex w-full gap-2 items-center py-6 pl-2">
         <button
-          onClick={() => editor?.commands.setContent("")}
+          onClick={handleClear}
           className="hover:cursor-pointer hover:bg-gray-300/80 rounded-lg py-2 px-6 text-sm flex justify-center items-center bg-gray-100 text-primary border-primary border"
         >
           Clear
         </button>
         <button
-          onClick={handleOnClick}
+          onClick={handleSend}
           className="hover:cursor-pointer hover:bg-primary/80 border border-primary rounded-lg py-2 px-6 text-sm flex justify-center items-center bg-primary text-white"
         >
-          Done
+          Send
         </button>
       </div>
     </ProtectedPage>

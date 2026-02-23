@@ -4,6 +4,14 @@
 	/* Heading styles */
 	/* Code and preformatted text styles */
 }
+/* Placeholder — shown when editor is empty */
+.tiptap.is-editor-empty p:first-child::before {
+	content: attr(data-placeholder);
+	float: left;
+	color: #9ca3af;
+	pointer-events: none;
+	height: 0;
+}
  .tiptap :first-child {
 	 margin-top: 0;
 }

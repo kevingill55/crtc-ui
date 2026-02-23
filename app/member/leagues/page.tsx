@@ -116,7 +116,7 @@ export default function Leagues() {
           status: NotificationStatus.SUCCESS,
           id: "temp",
           expiresIn: 5000,
-          title: data.message ?? "Enrolled",
+          title: data.data?.status === "WAITLISTED" ? "Added to waitlist" : "Enrolled",
         });
       } else {
         addNotification({

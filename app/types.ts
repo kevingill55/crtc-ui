@@ -52,6 +52,13 @@ export type Reservation = {
   name: string;
   created_at: string;
   players: string[];
+  type?: string;
+  group_id?: string | null;
+  league_id?: string | null;
+  // Returned by GET /reservations/upcoming
+  slots?: number[];
+  courts?: number[];
+  can_manage?: boolean;
 };
 
 export type Slot = {
