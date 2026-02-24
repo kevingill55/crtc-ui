@@ -44,11 +44,13 @@ const getSlotsDisplay = (item: Reservation) => {
 
 const getCourtsDisplay = (item: Reservation) => {
   const courts = item.courts?.length ? item.courts : [item.court];
-  return courts.length === 1 ? `Court ${courts[0]}` : `Courts ${courts.join(", ")}`;
+  return courts.length === 1
+    ? `Court ${courts[0]}`
+    : `Courts ${courts.join(", ")}`;
 };
 
 const TYPE_BADGE: Record<string, { label: string; cls: string }> = {
-  REGULAR: { label: "Personal", cls: "bg-blue-100 text-blue-700" },
+  REGULAR: { label: "Play on your own", cls: "bg-blue-100 text-blue-700" },
   LEAGUE: { label: "League", cls: "bg-green-100 text-green-700" },
   CLUB: { label: "Club", cls: "bg-purple-100 text-purple-700" },
 };
@@ -60,7 +62,9 @@ export default function MyReservations() {
   const { data, isLoading } = useQuery<{ data: Reservation[] }>({
     queryKey: ["getUpcomingReservations"],
     queryFn: async () => {
-      const res = await apiFetch("/api/reservations/upcoming", { method: "GET" });
+      const res = await apiFetch("/api/reservations/upcoming", {
+        method: "GET",
+      });
       return res.json();
     },
   });
@@ -74,7 +78,9 @@ export default function MyReservations() {
     },
     onSuccess: (data) => {
       if (data.success) {
-        queryClient.invalidateQueries({ queryKey: ["getUpcomingReservations"] });
+        queryClient.invalidateQueries({
+          queryKey: ["getUpcomingReservations"],
+        });
         addNotification({
           status: NotificationStatus.SUCCESS,
           id: "cancel-res",

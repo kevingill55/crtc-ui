@@ -56,7 +56,8 @@ function ReserveForm() {
   const [selectedLeagueId, setSelectedLeagueId] = useState<string | null>(null);
 
   // Show the league/club multi-slot form vs the regular single-slot form.
-  const showLeagueForm = bookingMode === "league" || bookingMode === "club";
+  const showLeagueForm =
+    bookingMode !== "personal" && (isAdmin || isLeagueCoordinator);
   // Skip the 7-day booking window when booking as league/admin.
   const skipBookingWindow = showLeagueForm;
 
@@ -65,6 +66,13 @@ function ReserveForm() {
   const [court, setCourt] = useState(Number(searchParams.get("court")) || 0);
   const [selectedCells, setSelectedCells] = useState<Set<string>>(new Set());
   const [players, setPlayers] = useState<string[]>([]);
+
+  // Pre-select the current user when in personal/regular booking mode.
+  useEffect(() => {
+    if (!showLeagueForm && user?.id && !players.includes(user.id)) {
+      setPlayers([user.id]);
+    }
+  }, [showLeagueForm, user?.id]);
   const [reservationName, setReservationName] = useState("");
   const [repeatWeekly, setRepeatWeekly] = useState(false);
   const [repeatWeeks, setRepeatWeeks] = useState(4);
@@ -205,7 +213,7 @@ function ReserveForm() {
     setSlot(0);
     setCourt(0);
     setSelectedCells(new Set());
-    setPlayers([]);
+    setPlayers(mode === "personal" && user?.id ? [user.id] : []);
     setReservationName(mode === "league" ? selectedLeague?.name ?? "" : "");
   };
 
@@ -322,7 +330,7 @@ function ReserveForm() {
                     : "text-gray-500 hover:text-gray-700"
                 }`}
               >
-                Personal
+                Play on your own
               </button>
             </div>
           )}
@@ -501,10 +509,7 @@ function ReserveForm() {
               <label className="text-gray-600">Players</label>
               <PlayersMultiSelect
                 players={players}
-                addPlayer={(val: string) => setPlayers([...players, val])}
-                removePlayer={(val: string) =>
-                  setPlayers(players.filter((player) => player !== val))
-                }
+                onSave={(newPlayers) => setPlayers(newPlayers)}
               />
             </div>
           </div>
