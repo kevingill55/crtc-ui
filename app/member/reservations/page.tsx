@@ -5,12 +5,35 @@ import { Reservation } from "@/app/types";
 import { faCircleExclamation } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useState } from "react";
 import Link from "next/link";
 import ProtectedPage from "../../components/ProtectedPage";
+import { Modal } from "../../components/Modal";
+import { Dropdown, DropdownOption } from "../../components/Dropdown";
+import { PlayersMultiSelect } from "../reserve/PlayersMultiSelect";
 import {
   NotificationStatus,
   useNotificationsContext,
 } from "@/app/providers/Notifications";
+
+const courtDropdownOptions: DropdownOption[] = [
+  { label: "Court 1 (Lower)", value: 1 },
+  { label: "Court 2 (Lower)", value: 2 },
+  { label: "Court 3 (Upper)", value: 3 },
+  { label: "Court 4 (Upper)", value: 4 },
+];
+
+const slotDropdownOptions: DropdownOption[] = [
+  { label: "8:30 - 10:00 am", value: 1 },
+  { label: "10:00 - 11:30 am", value: 2 },
+  { label: "11:30 - 1:00 pm", value: 3 },
+  { label: "1:00 - 2:30 pm", value: 4 },
+  { label: "2:30 - 4:00 pm", value: 5 },
+  { label: "4:00 - 5:30 pm", value: 6 },
+  { label: "5:30 - 7:00 pm", value: 7 },
+  { label: "7:00 - 8:30 pm", value: 8 },
+  { label: "8:30 - 10:00 pm", value: 9 },
+];
 
 const getDateString = (str: string) =>
   new Date(str + "T00:00:00").toLocaleDateString("en-US", {
@@ -59,6 +82,14 @@ export default function MyReservations() {
   const { addNotification } = useNotificationsContext();
   const queryClient = useQueryClient();
 
+  const [confirmCancel, setConfirmCancel] = useState<Reservation | null>(null);
+  const [editingReservation, setEditingReservation] =
+    useState<Reservation | null>(null);
+  const [editDate, setEditDate] = useState("");
+  const [editSlot, setEditSlot] = useState(0);
+  const [editCourt, setEditCourt] = useState(0);
+  const [editPlayers, setEditPlayers] = useState<string[]>([]);
+
   const { data, isLoading } = useQuery<{ data: Reservation[] }>({
     queryKey: ["getUpcomingReservations"],
     queryFn: async () => {
@@ -98,6 +129,57 @@ export default function MyReservations() {
     },
   });
 
+  const { mutate: updateReservation, isPending: updating } = useMutation({
+    mutationFn: async ({
+      id,
+      date,
+      slot,
+      court,
+      players,
+    }: {
+      id: string;
+      date: string;
+      slot: number;
+      court: number;
+      players: string[];
+    }) => {
+      const res = await apiFetch(`/api/reservations/${id}`, {
+        method: "PATCH",
+        body: JSON.stringify({ date, slot, court, players }),
+      });
+      return res.json();
+    },
+    onSuccess: (data) => {
+      if (data.success) {
+        queryClient.invalidateQueries({ queryKey: ["getUpcomingReservations"] });
+        setEditingReservation(null);
+        addNotification({
+          status: NotificationStatus.SUCCESS,
+          id: "update-res",
+          expiresIn: 4000,
+          title: "Reservation updated",
+        });
+      } else {
+        addNotification({
+          status: NotificationStatus.ERROR,
+          id: "update-res",
+          expiresIn: 4000,
+          title: data.message ?? "Could not update reservation",
+        });
+      }
+    },
+  });
+
+  const handleEditOpen = (item: Reservation) => {
+    setEditingReservation(item);
+    setEditDate(item.date);
+    setEditSlot(item.slot);
+    setEditCourt(item.court);
+    setEditPlayers(item.player_ids ?? []);
+  };
+
+  const today = new Date().toISOString().split("T")[0];
+
   // Group reservations by date
   const byDate: { date: string; items: Reservation[] }[] = [];
   const seen = new Set<string>();
@@ -114,6 +196,93 @@ export default function MyReservations() {
       title="My Reservations"
       subtitle="Upcoming court time you own or are listed on"
     >
+      {confirmCancel && (
+        <Modal
+          id="confirm-cancel"
+          title="Cancel reservation?"
+          subtitle={`"${confirmCancel.name}" on ${getDateString(confirmCancel.date)}`}
+          content={
+            <p className="text-sm text-gray-500 py-2">
+              This cannot be undone.
+            </p>
+          }
+          doneLabel="Confirm"
+          onDone={() => {
+            cancelReservation(confirmCancel.id);
+            setConfirmCancel(null);
+          }}
+          onClose={() => setConfirmCancel(null)}
+        />
+      )}
+
+      {editingReservation && (
+        <Modal
+          id="edit-reservation"
+          title="Edit reservation"
+          subtitle={editingReservation.name}
+          content={
+            <div className="flex flex-col gap-4 py-4">
+              <div className="flex flex-col gap-1">
+                <label className="text-sm text-gray-600">Date</label>
+                <input
+                  type="date"
+                  min={today}
+                  value={editDate}
+                  onChange={(e) => setEditDate(e.target.value)}
+                  className="w-48 px-4 py-2 rounded-lg border border-gray-300 focus:outline-1 focus:outline-primary hover:border-gray-500"
+                />
+              </div>
+              <div className="flex gap-4">
+                <div className="flex flex-col gap-1 flex-1">
+                  <label className="text-sm text-gray-600">Court</label>
+                  <Dropdown
+                    label={
+                      courtDropdownOptions.find((o) => o.value === editCourt)
+                        ?.label ?? "Select court"
+                    }
+                    value={editCourt}
+                    onSelect={(v) => setEditCourt(v as number)}
+                    options={courtDropdownOptions}
+                  />
+                </div>
+                <div className="flex flex-col gap-1 flex-1">
+                  <label className="text-sm text-gray-600">Time</label>
+                  <Dropdown
+                    label={
+                      editSlot
+                        ? slotDropdownOptions[editSlot - 1].label
+                        : "Select a time"
+                    }
+                    value={editSlot}
+                    onSelect={(v) => setEditSlot(v as number)}
+                    options={slotDropdownOptions}
+                  />
+                </div>
+              </div>
+              <div className="flex flex-col gap-1">
+                <label className="text-sm text-gray-600">Players</label>
+                <PlayersMultiSelect
+                  players={editPlayers}
+                  onSave={(newPlayers) => setEditPlayers(newPlayers)}
+                />
+              </div>
+            </div>
+          }
+          doneLabel="Save"
+          onDone={() => {
+            if (!editingReservation) return;
+            updateReservation({
+              id: editingReservation.id,
+              date: editDate,
+              slot: editSlot,
+              court: editCourt,
+              players: editPlayers,
+            });
+          }}
+          onClose={() => setEditingReservation(null)}
+        />
+      )}
+
       <div className="w-full pb-12">
         {isLoading ? (
           <div className="flex items-center gap-3 py-10 text-gray-500 text-sm">
@@ -144,6 +313,8 @@ export default function MyReservations() {
                 <div className="flex flex-col gap-2">
                   {items.map((item) => {
                     const badge = TYPE_BADGE[item.type ?? "REGULAR"];
+                    const canEdit =
+                      item.can_manage && item.type === "REGULAR";
                     return (
                       <div
                         key={item.id}
@@ -173,18 +344,26 @@ export default function MyReservations() {
                           </div>
                         </div>
 
-                        {/* Right: court + time + cancel */}
-                        <div className="flex items-center gap-6 shrink-0">
+                        {/* Right: court + time + actions */}
+                        <div className="flex items-center gap-3 shrink-0">
                           <div className="text-right text-sm text-gray-500 leading-5">
                             <p className="font-medium text-gray-700">
                               {getCourtsDisplay(item)}
                             </p>
                             <p>{getSlotsDisplay(item)}</p>
                           </div>
+                          {canEdit && (
+                            <button
+                              onClick={() => handleEditOpen(item)}
+                              className="text-xs text-primary border border-gray-300 hover:border-primary rounded-lg px-3 py-1.5 transition-colors hover:cursor-pointer"
+                            >
+                              Edit
+                            </button>
+                          )}
                           {item.can_manage ? (
                             <button
-                              onClick={() => cancelReservation(item.id)}
-                              disabled={cancelling}
+                              onClick={() => setConfirmCancel(item)}
+                              disabled={cancelling || updating}
                               className="text-xs text-red-400 hover:text-red-600 border border-red-200 hover:border-red-400 rounded-lg px-3 py-1.5 transition-colors hover:cursor-pointer disabled:opacity-40"
                             >
                               Cancel

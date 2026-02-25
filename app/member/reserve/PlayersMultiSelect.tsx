@@ -109,8 +109,8 @@ export const PlayersMultiSelect = ({
       </div>
       {isOpen && (
         <div className="absolute right-0 min-w-36 w-full z-10 mt-2 origin-top-right overflow-auto bg-white outline-1 outline-gray-300 text-primary rounded-md">
-          <div className="p-3 border-b border-gray-200">
-            <div className="relative w-2/3">
+          <div className="p-3 border-b border-gray-200 flex items-center gap-2">
+            <div className="relative flex-1">
               <input
                 type="text"
                 placeholder="Filter"
@@ -127,6 +127,18 @@ export const PlayersMultiSelect = ({
                 </button>
               )}
             </div>
+            <button
+              onClick={handleCancel}
+              className="px-3 py-1 rounded-lg text-sm text-primary border border-primary hover:bg-gray-100 hover:cursor-pointer whitespace-nowrap"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleSave}
+              className="px-3 py-1 rounded-lg text-sm bg-primary text-white hover:bg-primary/80 hover:cursor-pointer whitespace-nowrap"
+            >
+              Save
+            </button>
           </div>
           <div className="py-1 overflow-auto max-h-64">
             {filteredMembers.map((it) => (
@@ -147,20 +159,6 @@ export const PlayersMultiSelect = ({
                 </div>
               </div>
             ))}
-          </div>
-          <div className="flex justify-end gap-2 p-2 border-t border-gray-200">
-            <button
-              onClick={handleCancel}
-              className="px-4 py-1.5 rounded-lg text-sm text-primary border border-primary hover:bg-gray-100 hover:cursor-pointer"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={handleSave}
-              className="px-4 py-1.5 rounded-lg text-sm bg-primary text-white hover:bg-primary/80 hover:cursor-pointer"
-            >
-              Save
-            </button>
           </div>
         </div>
       )}

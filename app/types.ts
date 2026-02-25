@@ -59,6 +59,7 @@ export type Reservation = {
   slots?: number[];
   courts?: number[];
   can_manage?: boolean;
+  player_ids?: string[];
 };
 
 export type Slot = {

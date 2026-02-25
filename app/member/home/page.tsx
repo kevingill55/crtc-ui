@@ -253,7 +253,7 @@ export default function Home() {
             <FeatureCard
               icon={faClock}
               title="Booking Window"
-              description="Court reservations open at 10 PM, exactly 7 days before your desired date. Members can book one court per day."
+              description="Court reservations open at 10 PM, exactly 7 days before your desired date."
               iconBg="bg-blue-100"
               iconColor="text-blue-600"
               cardBg="bg-blue-50"

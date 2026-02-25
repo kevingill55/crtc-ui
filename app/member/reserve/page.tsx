@@ -44,15 +44,10 @@ function ReserveForm() {
   const { user, isAdmin } = useProtectedRoute({ isAdmin: false });
   const isLeagueCoordinator = user?.role === MemberRole.LEAGUE_COORDINATOR;
 
-  // Coordinators and admins choose between their elevated event type or a personal court time.
+  // Admins and coordinators can toggle between their elevated event type and personal.
   const [bookingMode, setBookingMode] = useState<
     "league" | "club" | "personal"
-  >("league");
-
-  // Default admins to "club" mode once the role is known.
-  useEffect(() => {
-    if (isAdmin) setBookingMode("club");
-  }, [isAdmin]);
+  >("personal");
   const [selectedLeagueId, setSelectedLeagueId] = useState<string | null>(null);
 
   // Show the league/club multi-slot form vs the regular single-slot form.
@@ -197,7 +192,7 @@ function ReserveForm() {
   };
 
   const handleOnClear = () => {
-    setPlayers([]);
+    setPlayers(!showLeagueForm && user?.id ? [user.id] : []);
     setDate("");
     setSlot(0);
     setCourt(0);
@@ -313,16 +308,6 @@ function ReserveForm() {
           {(isAdmin || isLeagueCoordinator) && (
             <div className="mt-3 flex gap-1 bg-gray-100 rounded-lg p-1 w-fit">
               <button
-                onClick={() => handleModeSwitch(isAdmin ? "club" : "league")}
-                className={`px-4 py-1.5 rounded-md text-sm font-medium transition-colors hover:cursor-pointer ${
-                  bookingMode !== "personal"
-                    ? "bg-white text-primary shadow-sm"
-                    : "text-gray-500 hover:text-gray-700"
-                }`}
-              >
-                {isAdmin ? "Club event" : "League event"}
-              </button>
-              <button
                 onClick={() => handleModeSwitch("personal")}
                 className={`px-4 py-1.5 rounded-md text-sm font-medium transition-colors hover:cursor-pointer ${
                   bookingMode === "personal"
@@ -331,6 +316,16 @@ function ReserveForm() {
                 }`}
               >
                 Play on your own
+              </button>
+              <button
+                onClick={() => handleModeSwitch(isAdmin ? "club" : "league")}
+                className={`px-4 py-1.5 rounded-md text-sm font-medium transition-colors hover:cursor-pointer ${
+                  bookingMode !== "personal"
+                    ? "bg-white text-primary shadow-sm"
+                    : "text-gray-500 hover:text-gray-700"
+                }`}
+              >
+                {isAdmin ? "Club event" : "League event"}
               </button>
             </div>
           )}

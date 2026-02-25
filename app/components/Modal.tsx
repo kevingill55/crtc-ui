@@ -5,6 +5,7 @@ export const Modal = ({
   onClose,
   onDone,
   content,
+  doneLabel = "Submit",
 }: {
   id: string;
   title: string;
@@ -12,6 +13,7 @@ export const Modal = ({
   content: React.ReactNode;
   onDone: () => void;
   onClose: () => void;
+  doneLabel?: string;
 }) => {
   return (
     <div
@@ -36,7 +38,7 @@ export const Modal = ({
             onClick={onDone}
             className="hover:cursor-pointer hover:bg-primary/80 border border-primary rounded-lg py-2 px-6 text-sm flex justify-center items-center bg-primary text-white"
           >
-            Submit
+            {doneLabel}
           </button>
         </div>
       </div>
