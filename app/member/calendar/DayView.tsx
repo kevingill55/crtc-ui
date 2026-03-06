@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { Slot } from "@/app/types";
+import { useProtectedRoute } from "@/app/hooks/useProtectedRoute";
 
 const COURTS = [1, 2, 3, 4];
 
@@ -14,9 +15,10 @@ const formatTime = (timeStr: string): string => {
 
 export default function DayView({ slots, date }: { slots: Slot[]; date: string }) {
   const router = useRouter();
+  const { user } = useProtectedRoute({ isAdmin: false });
   return (
     <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-      <table className="w-full border-collapse">
+      <table className="w-full border-collapse table-fixed">
         <thead>
           <tr>
             <th className="bg-primary text-white text-sm font-medium p-3 w-24 text-center">
@@ -25,7 +27,7 @@ export default function DayView({ slots, date }: { slots: Slot[]; date: string }
             {COURTS.map((c) => (
               <th
                 key={c}
-                className="bg-primary text-white text-sm font-medium p-3 text-center"
+                className="bg-primary text-white text-sm font-medium p-3 text-center w-1/4"
               >
                 Court {c}
               </th>
@@ -43,7 +45,18 @@ export default function DayView({ slots, date }: { slots: Slot[]; date: string }
                 return (
                   <td key={court} className="p-2">
                     {reservation ? (
-                      <div className="bg-amber-50 border-l-4 border-amber-400 rounded p-2">
+                      <div
+                        className={`bg-amber-50 border-l-4 border-amber-400 rounded p-2 ${
+                          reservation.member_id === user?.id
+                            ? "cursor-pointer hover:bg-amber-100"
+                            : ""
+                        }`}
+                        onClick={
+                          reservation.member_id === user?.id
+                            ? () => router.push("/member/reservations")
+                            : undefined
+                        }
+                      >
                         <p className="font-medium text-sm text-gray-800">
                           {reservation.name}
                         </p>

@@ -152,6 +152,7 @@ export default function MyReservations() {
     onSuccess: (data) => {
       if (data.success) {
         queryClient.invalidateQueries({ queryKey: ["getUpcomingReservations"] });
+        queryClient.invalidateQueries({ queryKey: ["getSlotsByDay"] });
         setEditingReservation(null);
         addNotification({
           status: NotificationStatus.SUCCESS,

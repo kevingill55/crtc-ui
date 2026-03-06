@@ -13,6 +13,7 @@ import {
   faArrowRight,
   IconDefinition,
   faBars,
+  faMap,
 } from "@fortawesome/free-solid-svg-icons";
 import { AppRouterInstance } from "next/dist/shared/lib/app-router-context.shared-runtime";
 
@@ -72,47 +73,6 @@ export default function Navbar() {
             </div>
           </Link>
           <div className="group relative hover:cursor-pointer hover:text-gray-600  hover:bg-white rounded-sm bg-transparent px-4 py-2 flex items-center gap-2">
-            <span>Membership</span>
-            <div className="transition-transform duration-500 group-hover:rotate-180">
-              <FontAwesomeIcon size="xs" icon={faAngleDown} />
-            </div>
-
-            <div className="hidden group-hover:block hover:block z-0 absolute w-[325px] top-full pt-4 left-0">
-              <div className="shadow-sm border rounded-xl border-gray-300 bg-white">
-                <div className="flex flex-col p-2 gap-2 text-gray-400">
-                  <NavMenuItem
-                    router={router}
-                    route="/public/membership-info"
-                    title="Info"
-                    icon={faFileLines}
-                    subtitle="Everything CRTC memberships"
-                  />
-                  <NavMenuItem
-                    router={router}
-                    route="/public/leagues"
-                    title="Leagues"
-                    icon={faBarsStaggered}
-                    subtitle="Singles, doubles, and mixed doubles"
-                  />
-                  <NavMenuItem
-                    router={router}
-                    route="/public/open-tennis"
-                    title="Drop-in tennis"
-                    icon={faUnlock}
-                    subtitle="Dedicated open tennis court time"
-                  />
-                  <NavMenuItem
-                    router={router}
-                    route="/join"
-                    title="Join"
-                    icon={faArrowRight}
-                    subtitle="New member application for first timers"
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
-          <div className="group relative hover:cursor-pointer hover:text-gray-600 hover:bg-white rounded-sm bg-transparent px-4 py-2 flex items-center gap-2">
             <span>About</span>
             <div className="transition-transform duration-500 group-hover:rotate-180">
               <FontAwesomeIcon size="xs" icon={faAngleDown} />
@@ -123,24 +83,31 @@ export default function Navbar() {
                 <div className="flex flex-col p-2 gap-2 text-gray-400">
                   <NavMenuItem
                     router={router}
-                    route="/public/history"
-                    title="History"
-                    icon={faBookOpen}
-                    subtitle="Learn more about the history of CRTC from then to now"
+                    route="/public/membership-info"
+                    title="Membership Info"
+                    icon={faFileLines}
+                    subtitle="CRTC memberships and league information"
                   />
                   <NavMenuItem
                     router={router}
                     route="/public/board"
-                    title="People"
+                    title="Officers & Board"
                     icon={faPeopleGroup}
-                    subtitle="Who we are, officers, board members"
+                    subtitle="List of officers, board members and club bylaws"
                   />
                   <NavMenuItem
                     router={router}
-                    route="/public/clay"
-                    title="Clay"
-                    icon={faCircleDot}
-                    subtitle="Discover the benefits of playing on clay"
+                    route="/public/directions"
+                    title="Directions and parking"
+                    icon={faMap}
+                    subtitle="Getting to CRTC"
+                  />
+                  <NavMenuItem
+                    router={router}
+                    route="/join"
+                    title="Join"
+                    icon={faArrowRight}
+                    subtitle="New member application for first timers"
                   />
                 </div>
               </div>
