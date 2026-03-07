@@ -505,6 +505,7 @@ function ReserveForm() {
               <PlayersMultiSelect
                 players={players}
                 onSave={(newPlayers) => setPlayers(newPlayers)}
+                currentUserId={!showLeagueForm ? user?.id : undefined}
               />
             </div>
           </div>

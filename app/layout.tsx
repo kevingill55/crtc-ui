@@ -8,6 +8,7 @@ import { AppNotifications } from "./AppNotifications";
 import "./globals.css";
 import { NotificationsProvider } from "./providers/Notifications";
 import { TanstackQuery } from "./providers/TanstackQuery";
+import { AuthListener } from "./providers/AuthListener";
 
 const playfairDisplay = Playfair_Display({
   variable: "--font-playfair-display",
@@ -43,6 +44,7 @@ export default function RootLayout({
       >
         <TanstackQuery>
           <NotificationsProvider>
+            <AuthListener />
             <AppNotifications />
             {children}
           </NotificationsProvider>

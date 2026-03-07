@@ -5,12 +5,13 @@ import type { Editor } from "@tiptap/react";
 import { Placeholder } from "@tiptap/extension-placeholder";
 import { EditorContent, useEditor, useEditorState } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useProtectedRoute } from "../../hooks/useProtectedRoute";
 import ProtectedPage from "@/app/components/ProtectedPage";
-import { sendMassEmail } from "@/app/actions/send-email";
+import { sendMassEmail, sendTestEmail } from "@/app/actions/send-email";
 import "./temp.css";
 import { useMutation, useQueries, useQuery } from "@tanstack/react-query";
+import { Modal } from "@/app/components/Modal";
 import {
   NotificationStatus,
   useNotificationsContext,
@@ -194,9 +195,114 @@ function RecipientChip({
   );
 }
 
+function MemberSelect({
+  members,
+  selectedIds,
+  onToggle,
+}: {
+  members: Member[];
+  selectedIds: Set<string>;
+  onToggle: (id: string) => void;
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [filter, setFilter] = useState("");
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) {
+        setIsOpen(false);
+        setFilter("");
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const filtered = useMemo(() => {
+    const base = filter
+      ? members.filter(
+          (m) =>
+            `${m.first_name} ${m.last_name}`
+              .toLowerCase()
+              .includes(filter.toLowerCase()) ||
+            m.email.toLowerCase().includes(filter.toLowerCase())
+        )
+      : members;
+    return [...base].sort((a, b) => {
+      const aSelected = selectedIds.has(a.id);
+      const bSelected = selectedIds.has(b.id);
+      if (aSelected && !bSelected) return -1;
+      if (!aSelected && bSelected) return 1;
+      return a.first_name.localeCompare(b.first_name);
+    });
+  }, [members, filter, selectedIds]);
+
+  return (
+    <div className="relative" ref={ref}>
+      <button
+        onClick={() => setIsOpen((prev) => !prev)}
+        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm border border-gray-300 bg-white text-gray-600 hover:bg-gray-50 hover:cursor-pointer transition-colors"
+      >
+        Select members
+        {selectedIds.size > 0 && (
+          <span className="text-xs px-1.5 py-0.5 rounded-full bg-primary text-white">
+            {selectedIds.size}
+          </span>
+        )}
+      </button>
+      {isOpen && (
+        <div className="absolute left-0 top-full mt-2 z-20 bg-white border border-gray-200 rounded-xl shadow-lg w-72">
+          <div className="p-2 border-b border-gray-100">
+            <input
+              type="text"
+              placeholder="Filter by name or email..."
+              value={filter}
+              onChange={(e) => setFilter(e.target.value)}
+              autoFocus
+              className="w-full px-3 py-1.5 text-sm rounded-lg border border-gray-200 focus:outline-1 focus:outline-primary"
+            />
+          </div>
+          <div className="overflow-y-auto max-h-64 py-1">
+            {filtered.length === 0 ? (
+              <p className="text-sm text-gray-400 px-3 py-2">
+                No members found
+              </p>
+            ) : (
+              filtered.map((m) => (
+                <div
+                  key={m.id}
+                  onClick={() => onToggle(m.id)}
+                  className="flex items-center gap-3 px-3 py-2 hover:bg-gray-50 hover:cursor-pointer"
+                >
+                  <div
+                    className={`w-4 h-4 rounded border border-primary shrink-0 ${
+                      selectedIds.has(m.id) ? "bg-primary" : ""
+                    }`}
+                  />
+                  <div className="min-w-0">
+                    <p className="text-sm text-gray-800">
+                      {m.first_name} {m.last_name}
+                    </p>
+                    <p className="text-xs text-gray-400 truncate">{m.email}</p>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function AdminEmail() {
   const [selectedGroups, setSelectedGroups] = useState<Set<string>>(new Set());
+  const [manualMemberIds, setManualMemberIds] = useState<Set<string>>(
+    new Set()
+  );
   const [subject, setSubject] = useState("");
+  const [showConfirm, setShowConfirm] = useState(false);
   const { addNotification } = useNotificationsContext();
   const { user } = useProtectedRoute({ isAdmin: true });
 
@@ -225,16 +331,17 @@ export default function AdminEmail() {
     });
   const activeMembers = activeMembersData?.data ?? [];
 
-  const { data: waitlistMembersData, isLoading: waitlistLoading } =
-    useQuery<{ data: Member[] }>({
-      queryKey: ["getMembers", "waitlist"],
-      queryFn: async () => {
-        const res = await apiFetch("/api/members?status=WAITLIST", {
-          method: "GET",
-        });
-        return res.json();
-      },
-    });
+  const { data: waitlistMembersData, isLoading: waitlistLoading } = useQuery<{
+    data: Member[];
+  }>({
+    queryKey: ["getMembers", "waitlist"],
+    queryFn: async () => {
+      const res = await apiFetch("/api/members?status=WAITLIST", {
+        method: "GET",
+      });
+      return res.json();
+    },
+  });
   const waitlistMembers = waitlistMembersData?.data ?? [];
 
   const { data: leaguesData, isLoading: leaguesLoading } = useQuery<{
@@ -266,14 +373,22 @@ export default function AdminEmail() {
 
   // ── Computed recipient list ─────────────────────────────────────────────────
 
+  const allSelectableMembers = useMemo(() => {
+    const seen = new Set<string>();
+    return [...activeMembers, ...waitlistMembers].filter((m) => {
+      if (seen.has(m.id)) return false;
+      seen.add(m.id);
+      return true;
+    });
+  }, [activeMembers, waitlistMembers]);
+
   const recipientEmails = useMemo(() => {
     const emailSet = new Set<string>();
-    if (selectedGroups.has("active")) {
-      activeMembers.forEach((m) => emailSet.add(m.email));
-    }
-    if (selectedGroups.has("waitlist")) {
-      waitlistMembers.forEach((m) => emailSet.add(m.email));
-    }
+    // Active + waitlist members tracked individually via manualMemberIds
+    allSelectableMembers
+      .filter((m) => manualMemberIds.has(m.id))
+      .forEach((m) => emailSet.add(m.email));
+    // League members (may not be in allSelectableMembers)
     leagues.forEach((league, i) => {
       if (selectedGroups.has(`league-${league.id}`)) {
         (leagueRosterResults[i]?.data?.data ?? []).forEach((e) => {
@@ -282,10 +397,43 @@ export default function AdminEmail() {
       }
     });
     return [...emailSet];
-  }, [selectedGroups, activeMembers, waitlistMembers, leagues, leagueRosterResults]);
+  }, [
+    manualMemberIds,
+    allSelectableMembers,
+    selectedGroups,
+    leagues,
+    leagueRosterResults,
+  ]);
 
   const toggleGroup = (id: string) => {
+    const isRemoving = selectedGroups.has(id);
     setSelectedGroups((prev) => {
+      const next = new Set(prev);
+      isRemoving ? next.delete(id) : next.add(id);
+      return next;
+    });
+    // Sync active/waitlist selections into manualMemberIds
+    if (id === "active") {
+      setManualMemberIds((prev) => {
+        const next = new Set(prev);
+        activeMembers.forEach((m) =>
+          isRemoving ? next.delete(m.id) : next.add(m.id)
+        );
+        return next;
+      });
+    } else if (id === "waitlist") {
+      setManualMemberIds((prev) => {
+        const next = new Set(prev);
+        waitlistMembers.forEach((m) =>
+          isRemoving ? next.delete(m.id) : next.add(m.id)
+        );
+        return next;
+      });
+    }
+  };
+
+  const toggleMember = (id: string) => {
+    setManualMemberIds((prev) => {
       const next = new Set(prev);
       next.has(id) ? next.delete(id) : next.add(id);
       return next;
@@ -294,10 +442,12 @@ export default function AdminEmail() {
 
   // ── Mutation ────────────────────────────────────────────────────────────────
 
-  const { mutate: submitEmail } = useMutation({
+  const { mutate: submitEmail, isPending: sending } = useMutation({
     onSuccess: () => {
       setSubject("");
       setSelectedGroups(new Set());
+      setManualMemberIds(new Set());
+      setShowConfirm(false);
       editor?.commands.setContent("");
       addNotification({
         status: NotificationStatus.SUCCESS,
@@ -310,12 +460,60 @@ export default function AdminEmail() {
       const formData = new FormData();
       formData.append("body", content);
       formData.append("subject", subject);
-      formData.append("recipients", recipientEmails.join(", "));
+      formData.append("bcc", recipientEmails.join(", "));
       await sendMassEmail(formData);
     },
   });
 
+  const { mutate: submitTestEmail, isPending: sendingTest } = useMutation({
+    onSuccess: () => {
+      addNotification({
+        status: NotificationStatus.SUCCESS,
+        id: "temp",
+        expiresIn: 5000,
+        title: `Test email sent to ${user?.email}`,
+      });
+    },
+    onError: () => {
+      addNotification({
+        status: NotificationStatus.ERROR,
+        id: "temp",
+        expiresIn: 4000,
+        title: "Failed to send test email",
+      });
+    },
+    mutationFn: async (content: string) => {
+      const formData = new FormData();
+      formData.append("body", content);
+      formData.append("subject", subject);
+      formData.append("to", user?.email ?? "");
+      await sendTestEmail(formData);
+    },
+  });
+
   if (!user || !editor) return null;
+
+  const validate = (): boolean => {
+    if (!subject.trim()) {
+      addNotification({
+        status: NotificationStatus.ERROR,
+        id: "temp",
+        expiresIn: 4000,
+        title: "Please enter a subject before sending",
+      });
+      return false;
+    }
+    if (editor.isEmpty) {
+      addNotification({
+        status: NotificationStatus.ERROR,
+        id: "temp",
+        expiresIn: 4000,
+        title: "Please write a message before sending",
+      });
+      return false;
+    }
+    return true;
+  };
 
   const handleSend = () => {
     if (recipientEmails.length === 0) {
@@ -327,17 +525,41 @@ export default function AdminEmail() {
       });
       return;
     }
-    submitEmail(editor.getHTML());
+    if (!validate()) return;
+    setShowConfirm(true);
+  };
+
+  const handleSendTest = () => {
+    if (!validate()) return;
+    submitTestEmail(editor.getHTML());
   };
 
   const handleClear = () => {
     setSelectedGroups(new Set());
+    setManualMemberIds(new Set());
     setSubject("");
     editor.commands.setContent("");
   };
 
   return (
     <ProtectedPage title="Email">
+      {showConfirm && (
+        <Modal
+          id="confirm-send"
+          title="Send email?"
+          subtitle={`This will be sent to ${recipientEmails.length} recipient${
+            recipientEmails.length !== 1 ? "s" : ""
+          }`}
+          content={
+            <p className="text-sm text-gray-500 py-2">
+              All recipients will receive this as a BCC. This cannot be undone.
+            </p>
+          }
+          doneLabel={sending ? "Sending..." : "Send"}
+          onDone={() => submitEmail(editor.getHTML())}
+          onClose={() => setShowConfirm(false)}
+        />
+      )}
       <div className="w-full border rounded-xl border-zinc-200 bg-zinc-100 shadow-lg p-6 flex flex-col gap-5">
         {/* Recipients */}
         <div className="flex flex-col gap-2">
@@ -346,14 +568,14 @@ export default function AdminEmail() {
           {/* Member groups */}
           <div className="flex flex-wrap gap-2">
             <RecipientChip
-              label="All active members"
+              label="Active members"
               count={activeMembersLoading ? null : activeMembers.length}
               selected={selectedGroups.has("active")}
               loading={activeMembersLoading}
               onClick={() => toggleGroup("active")}
             />
             <RecipientChip
-              label="Club waitlist"
+              label="Waitlist"
               count={waitlistLoading ? null : waitlistMembers.length}
               selected={selectedGroups.has("waitlist")}
               loading={waitlistLoading}
@@ -364,7 +586,7 @@ export default function AdminEmail() {
           {/* League groups */}
           {leaguesLoading ? (
             <p className="text-xs text-gray-400">Loading leagues...</p>
-          ) : (
+          ) : leagues.length > 0 ? (
             <div className="flex flex-wrap gap-2">
               {leagues.map((league, i) => {
                 const result = leagueRosterResults[i];
@@ -373,7 +595,7 @@ export default function AdminEmail() {
                     key={league.id}
                     label={league.name}
                     count={
-                      result?.isLoading ? null : (result?.data?.data?.length ?? 0)
+                      result?.isLoading ? null : result?.data?.data?.length ?? 0
                     }
                     selected={selectedGroups.has(`league-${league.id}`)}
                     loading={result?.isLoading ?? false}
@@ -382,16 +604,25 @@ export default function AdminEmail() {
                 );
               })}
             </div>
-          )}
+          ) : null}
+
+          {/* Individual member picker */}
+          <MemberSelect
+            members={allSelectableMembers}
+            selectedIds={manualMemberIds}
+            onToggle={toggleMember}
+          />
 
           <p
             className={`text-xs ${
               selectedGroups.size === 0 ? "text-amber-600" : "text-gray-500"
             }`}
           >
-            {selectedGroups.size === 0
+            {recipientEmails.length === 0
               ? "No recipients selected"
-              : `${recipientEmails.length} unique recipient${recipientEmails.length !== 1 ? "s" : ""}`}
+              : `${recipientEmails.length} unique recipient${
+                  recipientEmails.length !== 1 ? "s" : ""
+                }`}
           </p>
         </div>
 
@@ -422,8 +653,16 @@ export default function AdminEmail() {
           Clear
         </button>
         <button
+          onClick={handleSendTest}
+          disabled={sendingTest || sending}
+          className="hover:cursor-pointer hover:bg-gray-300/80 rounded-lg py-2 px-6 text-sm flex justify-center items-center bg-gray-100 text-primary border-primary border disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {sendingTest ? "Sending..." : "Send test"}
+        </button>
+        <button
           onClick={handleSend}
-          className="hover:cursor-pointer hover:bg-primary/80 border border-primary rounded-lg py-2 px-6 text-sm flex justify-center items-center bg-primary text-white"
+          disabled={sending || sendingTest}
+          className="hover:cursor-pointer hover:bg-primary/80 border border-primary rounded-lg py-2 px-6 text-sm flex justify-center items-center bg-primary text-white disabled:opacity-50 disabled:cursor-not-allowed"
         >
           Send
         </button>

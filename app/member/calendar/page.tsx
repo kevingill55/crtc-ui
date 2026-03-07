@@ -69,6 +69,14 @@ export default function Calendar() {
     });
   }, [view, currentDate]);
 
+  const weekday =
+    view === "day"
+      ? currentDate.toLocaleDateString("en-US", {
+          weekday: "long",
+          timeZone: "America/New_York",
+        })
+      : null;
+
   // Day view data
   const dateIso = toEasternISO(currentDate);
   const { data: dayData } = useQuery<GetSlotsApiResponse>({
@@ -94,9 +102,7 @@ export default function Calendar() {
       firstOfMonth.getDate() - ((firstOfMonth.getDay() + 6) % 7)
     );
     const gridEnd = new Date(lastOfMonth);
-    gridEnd.setDate(
-      lastOfMonth.getDate() + ((7 - lastOfMonth.getDay()) % 7)
-    );
+    gridEnd.setDate(lastOfMonth.getDate() + ((7 - lastOfMonth.getDay()) % 7));
 
     return {
       monthStart: toEasternISO(gridStart),
@@ -149,7 +155,12 @@ export default function Calendar() {
           </div>
 
           {/* Center: date label */}
-          <h2 className="text-primary font-bold text-lg">{label}</h2>
+          <div className="flex flex-col items-center">
+            <h2 className="text-primary font-bold text-lg">{label}</h2>
+            {weekday && (
+              <p className="text-gray-600 leading-3 text-sm">{weekday}</p>
+            )}
+          </div>
 
           {/* Right: view toggle */}
           <div className="flex rounded-lg border border-gray-200 bg-white p-1 gap-1">
@@ -170,7 +181,9 @@ export default function Calendar() {
         </div>
 
         {/* View content */}
-        {view === "day" && <DayView slots={dayData?.slots || []} date={dateIso} />}
+        {view === "day" && (
+          <DayView slots={dayData?.slots || []} date={dateIso} />
+        )}
         {view === "week" && (
           <WeekView
             currentDate={currentDate}

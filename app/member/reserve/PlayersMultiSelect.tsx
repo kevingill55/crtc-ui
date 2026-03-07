@@ -10,9 +10,11 @@ import { useState, useEffect, useRef, useMemo } from "react";
 export const PlayersMultiSelect = ({
   players,
   onSave,
+  currentUserId,
 }: {
   players: string[];
   onSave: (players: string[]) => void;
+  currentUserId?: string;
 }) => {
   const [filter, setFilter] = useState("");
   const [isOpen, setIsOpen] = useState(false);
@@ -69,6 +71,7 @@ export const PlayersMultiSelect = ({
   };
 
   const handleToggle = (id: string) => {
+    if (id === currentUserId) return;
     setLocalPlayers((prev) =>
       prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
     );
@@ -141,24 +144,31 @@ export const PlayersMultiSelect = ({
             </button>
           </div>
           <div className="py-1 overflow-auto max-h-64">
-            {filteredMembers.map((it) => (
-              <div
-                key={it.id}
-                onClick={() => handleToggle(it.id)}
-                className="block hover:cursor-pointer hover:bg-gray-200 px-2.5 py-2"
-              >
-                <div className="flex items-center gap-4">
-                  <div
-                    className={`w-4 h-4 rounded border border-primary ${
-                      localPlayers.includes(it.id) && "bg-primary"
-                    }`}
-                  ></div>
-                  <p>
-                    {it.first_name} {it.last_name}
-                  </p>
+            {filteredMembers.map((it) => {
+              const isCurrentUser = it.id === currentUserId;
+              return (
+                <div
+                  key={it.id}
+                  onClick={() => handleToggle(it.id)}
+                  className={`block px-2.5 py-2 ${
+                    isCurrentUser
+                      ? "opacity-50 cursor-not-allowed"
+                      : "hover:cursor-pointer hover:bg-gray-200"
+                  }`}
+                >
+                  <div className="flex items-center gap-4">
+                    <div
+                      className={`w-4 h-4 rounded border border-primary ${
+                        localPlayers.includes(it.id) && "bg-primary"
+                      }`}
+                    ></div>
+                    <p>
+                      {it.first_name} {it.last_name}
+                    </p>
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       )}

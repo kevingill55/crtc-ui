@@ -12,7 +12,7 @@ import {
   useNotificationsContext,
 } from "../providers/Notifications";
 
-export function useProtectedRoute({ isAdmin }: { isAdmin: boolean }) {
+export function useProtectedRoute({ isAdmin = false }: { isAdmin?: boolean } = {}) {
   const router = useRouter();
   const { addNotification } = useNotificationsContext();
 
@@ -20,13 +20,14 @@ export function useProtectedRoute({ isAdmin }: { isAdmin: boolean }) {
     data: sessionData,
     isError: isSessionError,
     isLoading: isSessionLoading,
-  } = useQuery<{ error: AuthError | null; data: { session: Session } }>({
+  } = useQuery<{ error: AuthError | null; data: { session: Session | null } }>({
     queryKey: ["getSession"],
-    // staleTime: 5 * 60 * 1000, // Don't refetch session constantly
     queryFn: () => supabase.auth.getSession(),
+    staleTime: 5 * 60 * 1000,
   });
 
-  const memberId = sessionData?.data?.session.user.id || "";
+  const session = sessionData?.data?.session ?? null;
+  const memberId = session?.user.id ?? "";
 
   const {
     data: userData,
@@ -37,32 +38,57 @@ export function useProtectedRoute({ isAdmin }: { isAdmin: boolean }) {
     queryFn: async () => {
       return getMember(memberId);
     },
-    enabled: !!sessionData?.data.session,
+    enabled: !!session,
+    retry: false,
   });
 
   useEffect(() => {
+    // Session loaded but no active session — send to login
+    if (!isSessionLoading && sessionData && !session) {
+      router.push("/login");
+      return;
+    }
+
+    if (isSessionError) {
+      router.push("/login");
+      return;
+    }
+
+    // getMember returned failure (e.g. token rejected by the backend)
     if (userData && !userData.success) {
       addNotification({
         status: NotificationStatus.WARNING,
         title: "Your session has timed out — please log in again to continue",
-        id: "temp",
+        id: "session-timeout",
+        expiresIn: 6000,
       });
       router.push("/login");
+      return;
     }
 
-    if (isAdmin) {
-      if (userData && userData.data.member.role !== MemberRole.ADMIN) {
+    // Role guard for admin-only pages
+    if (isAdmin && userData?.success) {
+      if (userData.data.member.role !== MemberRole.ADMIN) {
         router.back();
       }
     }
-  }, [router, addNotification, isAdmin, userData]);
+  }, [
+    router,
+    addNotification,
+    isAdmin,
+    userData,
+    session,
+    isSessionLoading,
+    sessionData,
+    isSessionError,
+  ]);
 
   return {
-    user: userData?.data.member,
-    isActive: userData?.data.member.status === MemberStatus.ACTIVE || false,
-    isAdmin: userData?.data.member.role === MemberRole.ADMIN || false,
+    user: userData?.data?.member,
+    isActive: userData?.data?.member?.status === MemberStatus.ACTIVE || false,
+    isAdmin: userData?.data?.member?.role === MemberRole.ADMIN || false,
     isLeagueCoordinator:
-      userData?.data.member.role === MemberRole.LEAGUE_COORDINATOR || false,
+      userData?.data?.member?.role === MemberRole.LEAGUE_COORDINATOR || false,
     error: isUserError || isSessionError,
     loading: isUserLoading || isSessionLoading,
   };

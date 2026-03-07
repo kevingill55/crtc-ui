@@ -8,6 +8,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import Link from "next/link";
 import ProtectedPage from "../../components/ProtectedPage";
+import { useProtectedRoute } from "../../hooks/useProtectedRoute";
 import { Modal } from "../../components/Modal";
 import { Dropdown, DropdownOption } from "../../components/Dropdown";
 import { PlayersMultiSelect } from "../reserve/PlayersMultiSelect";
@@ -81,8 +82,9 @@ const TYPE_BADGE: Record<string, { label: string; cls: string }> = {
 export default function MyReservations() {
   const { addNotification } = useNotificationsContext();
   const queryClient = useQueryClient();
+  const { user } = useProtectedRoute();
 
-  const [confirmCancel, setConfirmCancel] = useState<Reservation | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState<Reservation | null>(null);
   const [editingReservation, setEditingReservation] =
     useState<Reservation | null>(null);
   const [editDate, setEditDate] = useState("");
@@ -100,7 +102,7 @@ export default function MyReservations() {
     },
   });
 
-  const { mutate: cancelReservation, isPending: cancelling } = useMutation({
+  const { mutate: deleteReservation, isPending: deleting } = useMutation({
     mutationFn: async (reservationId: string) => {
       const res = await apiFetch(`/api/reservations/${reservationId}`, {
         method: "DELETE",
@@ -114,16 +116,16 @@ export default function MyReservations() {
         });
         addNotification({
           status: NotificationStatus.SUCCESS,
-          id: "cancel-res",
+          id: "delete-res",
           expiresIn: 4000,
-          title: "Reservation cancelled",
+          title: "Reservation deleted",
         });
       } else {
         addNotification({
           status: NotificationStatus.ERROR,
-          id: "cancel-res",
+          id: "delete-res",
           expiresIn: 4000,
-          title: data.message ?? "Could not cancel reservation",
+          title: data.message ?? "Could not delete reservation",
         });
       }
     },
@@ -197,22 +199,22 @@ export default function MyReservations() {
       title="My Reservations"
       subtitle="Upcoming court time you own or are listed on"
     >
-      {confirmCancel && (
+      {confirmDelete && (
         <Modal
-          id="confirm-cancel"
-          title="Cancel reservation?"
-          subtitle={`"${confirmCancel.name}" on ${getDateString(confirmCancel.date)}`}
+          id="confirm-delete"
+          title="Delete reservation?"
+          subtitle={`"${confirmDelete.name}" on ${getDateString(confirmDelete.date)}`}
           content={
             <p className="text-sm text-gray-500 py-2">
               This cannot be undone.
             </p>
           }
-          doneLabel="Confirm"
+          doneLabel="Delete"
           onDone={() => {
-            cancelReservation(confirmCancel.id);
-            setConfirmCancel(null);
+            deleteReservation(confirmDelete.id);
+            setConfirmDelete(null);
           }}
-          onClose={() => setConfirmCancel(null)}
+          onClose={() => setConfirmDelete(null)}
         />
       )}
 
@@ -265,6 +267,7 @@ export default function MyReservations() {
                 <PlayersMultiSelect
                   players={editPlayers}
                   onSave={(newPlayers) => setEditPlayers(newPlayers)}
+                  currentUserId={user?.id}
                 />
               </div>
             </div>
@@ -363,11 +366,11 @@ export default function MyReservations() {
                           )}
                           {item.can_manage ? (
                             <button
-                              onClick={() => setConfirmCancel(item)}
-                              disabled={cancelling || updating}
+                              onClick={() => setConfirmDelete(item)}
+                              disabled={deleting || updating}
                               className="text-xs text-red-400 hover:text-red-600 border border-red-200 hover:border-red-400 rounded-lg px-3 py-1.5 transition-colors hover:cursor-pointer disabled:opacity-40"
                             >
-                              Cancel
+                              Delete
                             </button>
                           ) : (
                             <div className="w-[60px]" />
