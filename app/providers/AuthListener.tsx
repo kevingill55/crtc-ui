@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
+import type { AuthChangeEvent } from "@supabase/auth-js";
 import { supabase } from "../clients/supabase";
 
 /**
@@ -19,7 +20,7 @@ export function AuthListener() {
   useEffect(() => {
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((event) => {
+    } = supabase.auth.onAuthStateChange((event: AuthChangeEvent) => {
       if (event === "SIGNED_OUT") {
         const pathname =
           typeof window !== "undefined" ? window.location.pathname : "";
