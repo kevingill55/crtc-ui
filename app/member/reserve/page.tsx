@@ -215,6 +215,8 @@ function ReserveForm() {
   const { mutate: createReservation, isPending } = useMutation({
     onSuccess: (result: unknown) => {
       queryClient.invalidateQueries({ queryKey: ["getSlotsByDay"] });
+      queryClient.invalidateQueries({ queryKey: ["getUpcomingReservations"] });
+      queryClient.invalidateQueries({ queryKey: ["availability"] });
       handleOnClear();
       const count = (result as { count?: number })?.count;
       addNotification({

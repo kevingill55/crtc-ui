@@ -114,6 +114,8 @@ export default function MyReservations() {
         queryClient.invalidateQueries({
           queryKey: ["getUpcomingReservations"],
         });
+        queryClient.invalidateQueries({ queryKey: ["getSlotsByDay"] });
+        queryClient.invalidateQueries({ queryKey: ["availability"] });
         addNotification({
           status: NotificationStatus.SUCCESS,
           id: "delete-res",
@@ -141,20 +143,26 @@ export default function MyReservations() {
     }: {
       id: string;
       date: string;
-      slot: number;
-      court: number;
+      slot?: number;
+      court?: number;
       players: string[];
     }) => {
+      const body: Record<string, unknown> = { date, players };
+      if (slot !== undefined) body.slot = slot;
+      if (court !== undefined) body.court = court;
       const res = await apiFetch(`/api/reservations/${id}`, {
         method: "PATCH",
-        body: JSON.stringify({ date, slot, court, players }),
+        body: JSON.stringify(body),
       });
       return res.json();
     },
     onSuccess: (data) => {
       if (data.success) {
-        queryClient.invalidateQueries({ queryKey: ["getUpcomingReservations"] });
+        queryClient.invalidateQueries({
+          queryKey: ["getUpcomingReservations"],
+        });
         queryClient.invalidateQueries({ queryKey: ["getSlotsByDay"] });
+        queryClient.invalidateQueries({ queryKey: ["availability"] });
         setEditingReservation(null);
         addNotification({
           status: NotificationStatus.SUCCESS,
@@ -203,11 +211,11 @@ export default function MyReservations() {
         <Modal
           id="confirm-delete"
           title="Delete reservation?"
-          subtitle={`"${confirmDelete.name}" on ${getDateString(confirmDelete.date)}`}
+          subtitle={`"${confirmDelete.name}" on ${getDateString(
+            confirmDelete.date
+          )}`}
           content={
-            <p className="text-sm text-gray-500 py-2">
-              This cannot be undone.
-            </p>
+            <p className="text-sm text-gray-500 py-2">This cannot be undone.</p>
           }
           doneLabel="Delete"
           onDone={() => {
@@ -235,33 +243,47 @@ export default function MyReservations() {
                   className="w-48 px-4 py-2 rounded-lg border border-gray-300 focus:outline-1 focus:outline-primary hover:border-gray-500"
                 />
               </div>
-              <div className="flex gap-4">
-                <div className="flex flex-col gap-1 flex-1">
-                  <label className="text-sm text-gray-600">Court</label>
-                  <Dropdown
-                    label={
-                      courtDropdownOptions.find((o) => o.value === editCourt)
-                        ?.label ?? "Select court"
-                    }
-                    value={editCourt}
-                    onSelect={(v) => setEditCourt(v as number)}
-                    options={courtDropdownOptions}
-                  />
+              {editingReservation.type === "REGULAR" && (
+                <div className="flex gap-4">
+                  <div className="flex flex-col gap-1 flex-1">
+                    <label className="text-sm text-gray-600">Court</label>
+                    <Dropdown
+                      label={
+                        courtDropdownOptions.find((o) => o.value === editCourt)
+                          ?.label ?? "Select court"
+                      }
+                      value={editCourt}
+                      onSelect={(v) => setEditCourt(v as number)}
+                      options={courtDropdownOptions}
+                    />
+                  </div>
+                  <div className="flex flex-col gap-1 flex-1">
+                    <label className="text-sm text-gray-600">Time</label>
+                    <Dropdown
+                      label={
+                        editSlot
+                          ? slotDropdownOptions[editSlot - 1].label
+                          : "Select a time"
+                      }
+                      value={editSlot}
+                      onSelect={(v) => setEditSlot(v as number)}
+                      options={slotDropdownOptions}
+                    />
+                  </div>
                 </div>
-                <div className="flex flex-col gap-1 flex-1">
-                  <label className="text-sm text-gray-600">Time</label>
-                  <Dropdown
-                    label={
-                      editSlot
-                        ? slotDropdownOptions[editSlot - 1].label
-                        : "Select a time"
-                    }
-                    value={editSlot}
-                    onSelect={(v) => setEditSlot(v as number)}
-                    options={slotDropdownOptions}
-                  />
+              )}
+              {editingReservation.type === "CLUB" && (
+                <div className="flex gap-4 text-sm text-gray-500">
+                  <div className="flex flex-col gap-1">
+                    <span className="text-gray-600">Courts</span>
+                    <span>{getCourtsDisplay(editingReservation)}</span>
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <span className="text-gray-600">Time</span>
+                    <span>{getSlotsDisplay(editingReservation)}</span>
+                  </div>
                 </div>
-              </div>
+              )}
               <div className="flex flex-col gap-1">
                 <label className="text-sm text-gray-600">Players</label>
                 <PlayersMultiSelect
@@ -278,8 +300,9 @@ export default function MyReservations() {
             updateReservation({
               id: editingReservation.id,
               date: editDate,
-              slot: editSlot,
-              court: editCourt,
+              slot: editingReservation.type === "REGULAR" ? editSlot : undefined,
+              court:
+                editingReservation.type === "REGULAR" ? editCourt : undefined,
               players: editPlayers,
             });
           }}
@@ -318,7 +341,8 @@ export default function MyReservations() {
                   {items.map((item) => {
                     const badge = TYPE_BADGE[item.type ?? "REGULAR"];
                     const canEdit =
-                      item.can_manage && item.type === "REGULAR";
+                      item.can_manage &&
+                      (item.type === "REGULAR" || item.type === "CLUB");
                     return (
                       <div
                         key={item.id}
@@ -349,32 +373,32 @@ export default function MyReservations() {
                         </div>
 
                         {/* Right: court + time + actions */}
-                        <div className="flex items-center gap-3 shrink-0">
-                          <div className="text-right text-sm text-gray-500 leading-5">
+                        <div className="flex items-center gap-2 shrink-0">
+                          <div className="text-right text-sm text-gray-500 leading-5 mr-2">
                             <p className="font-medium text-gray-700">
                               {getCourtsDisplay(item)}
                             </p>
                             <p>{getSlotsDisplay(item)}</p>
                           </div>
-                          {canEdit && (
-                            <button
-                              onClick={() => handleEditOpen(item)}
-                              className="text-xs text-primary border border-gray-300 hover:border-primary rounded-lg px-3 py-1.5 transition-colors hover:cursor-pointer"
-                            >
-                              Edit
-                            </button>
-                          )}
-                          {item.can_manage ? (
-                            <button
-                              onClick={() => setConfirmDelete(item)}
-                              disabled={deleting || updating}
-                              className="text-xs text-red-400 hover:text-red-600 border border-red-200 hover:border-red-400 rounded-lg px-3 py-1.5 transition-colors hover:cursor-pointer disabled:opacity-40"
-                            >
-                              Delete
-                            </button>
-                          ) : (
-                            <div className="w-[60px]" />
-                          )}
+                          <button
+                            onClick={() => handleEditOpen(item)}
+                            className={`text-xs text-primary border border-gray-300 hover:border-primary rounded-lg px-3 py-1.5 transition-colors hover:cursor-pointer ${
+                              canEdit ? "" : "invisible pointer-events-none"
+                            }`}
+                          >
+                            Edit
+                          </button>
+                          <button
+                            onClick={() => setConfirmDelete(item)}
+                            disabled={deleting || updating}
+                            className={`text-xs text-red-400 hover:text-red-600 border border-red-200 hover:border-red-400 rounded-lg px-3 py-1.5 transition-colors hover:cursor-pointer disabled:opacity-40 ${
+                              item.can_manage
+                                ? ""
+                                : "invisible pointer-events-none"
+                            }`}
+                          >
+                            Delete
+                          </button>
                         </div>
                       </div>
                     );
