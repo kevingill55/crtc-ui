@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { Slot } from "@/app/types";
 import { useProtectedRoute } from "@/app/hooks/useProtectedRoute";
+import { getReservationColors } from "@/app/utils";
 
 const COURTS = [1, 2, 3, 4];
 
@@ -42,13 +43,14 @@ export default function DayView({ slots, date }: { slots: Slot[]; date: string }
               </td>
               {COURTS.map((court) => {
                 const reservation = slot.reservationsByCourt[court];
+                const { cell } = getReservationColors(reservation?.type);
                 return (
                   <td key={court} className="p-2">
                     {reservation ? (
                       <div
-                        className={`bg-amber-50 border-l-4 border-amber-400 rounded p-2 ${
+                        className={`${cell.bg} border-l-4 ${cell.border} rounded p-2 ${
                           reservation.member_id === user?.id
-                            ? "cursor-pointer hover:bg-amber-100"
+                            ? `cursor-pointer ${cell.hover}`
                             : ""
                         }`}
                         onClick={
@@ -76,7 +78,7 @@ export default function DayView({ slots, date }: { slots: Slot[]; date: string }
                       </div>
                     ) : (
                       <div
-                        className="bg-blue-50 rounded p-2 cursor-pointer hover:bg-blue-100"
+                        className="bg-white border border-gray-200 rounded p-2 cursor-pointer hover:bg-gray-50 hover:border-gray-300"
                         onClick={() =>
                           router.push(
                             `/member/reserve?date=${date}&slot=${slot.slotIndex}&court=${court}`

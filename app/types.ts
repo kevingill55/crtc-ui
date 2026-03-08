@@ -26,6 +26,12 @@ export enum ReservationStatus {
   CANCELLED = "CANCELLED",
 }
 
+export enum ReservationType {
+  REGULAR = "REGULAR",
+  LEAGUE = "LEAGUE",
+  CLUB = "CLUB",
+}
+
 export type Member = {
   created_at: string;
   id: string;
@@ -52,7 +58,7 @@ export type Reservation = {
   name: string;
   created_at: string;
   players: string[];
-  type?: string;
+  type?: ReservationType;
   group_id?: string | null;
   league_id?: string | null;
   // Returned by GET /reservations/upcoming

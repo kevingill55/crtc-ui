@@ -78,7 +78,7 @@ function ReserveForm() {
     const etNow = new Date(
       now.toLocaleString("en-US", { timeZone: "America/New_York" })
     );
-    const daysAhead = etNow.getHours() >= 22 ? 7 : 6;
+    const daysAhead = etNow.getHours() >= 22 ? 8 : 7;
     const max = new Date(now);
     max.setDate(now.getDate() + daysAhead);
     return { minDate: toEasternISO(now), maxDate: toEasternISO(max) };
@@ -90,7 +90,7 @@ function ReserveForm() {
       return { valid: false, message: "Cannot book a date in the past." };
     if (!skipBookingWindow && date > maxDate) {
       const [y, m, d] = date.split("-").map(Number);
-      const opensDate = new Date(y, m - 1, d - 7).toLocaleDateString("en-US", {
+      const opensDate = new Date(y, m - 1, d - 8).toLocaleDateString("en-US", {
         month: "short",
         day: "numeric",
       });
@@ -229,6 +229,14 @@ function ReserveForm() {
             : "Reservation created",
       });
     },
+    onError: (error: Error) => {
+      addNotification({
+        status: NotificationStatus.ERROR,
+        id: "temp",
+        expiresIn: 7000,
+        title: error.message || "Failed to create reservation",
+      });
+    },
     mutationFn: async () => {
       if (showLeagueForm) {
         const slots_arr = [
@@ -250,6 +258,7 @@ function ReserveForm() {
 
         const type = isAdmin ? "CLUB" : "LEAGUE";
         let successCount = 0;
+        let lastError = "";
         for (const dt of dates) {
           const res = await apiFetch(`/api/reservations`, {
             method: "POST",
@@ -263,7 +272,15 @@ function ReserveForm() {
               ...(type === "LEAGUE" && { league_id: selectedLeagueId }),
             }),
           });
-          if (res.ok) successCount++;
+          if (res.ok) {
+            successCount++;
+          } else {
+            const data = await res.json().catch(() => ({}));
+            lastError = data.message || "Failed to create reservation";
+          }
+        }
+        if (successCount === 0) {
+          throw new Error(lastError || "Failed to create reservation");
         }
         return { count: successCount };
       } else {
@@ -277,7 +294,11 @@ function ReserveForm() {
             date,
           }),
         });
-        return res.json();
+        const data = await res.json();
+        if (!res.ok) {
+          throw new Error(data.message || "Failed to create reservation");
+        }
+        return data;
       }
     },
   });

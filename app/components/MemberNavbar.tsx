@@ -16,6 +16,7 @@ import {
   faUser,
   faArrowRightFromBracket,
   faTrophy,
+  faLandmark,
 } from "@fortawesome/free-solid-svg-icons";
 import { AppRouterInstance } from "next/dist/shared/lib/app-router-context.shared-runtime";
 import { PropsWithChildren } from "react";
@@ -27,13 +28,31 @@ function MemberNavMenuItem({
   router,
   subtitle,
   icon,
+  href,
 }: {
   icon: IconDefinition;
   router: AppRouterInstance;
   title: string;
   subtitle: string;
   route: string;
+  href?: string;
 }) {
+  if (href) {
+    return (
+      <a href={href} target="_blank" rel="noopener noreferrer">
+        <div className="flex p-1 hover:bg-gray-100 hover:text-classic-tennis rounded-lg items-center gap-2">
+          <div className="bg-gray-100 p-2 rounded-sm">
+            <FontAwesomeIcon size="lg" icon={icon} />
+          </div>
+          <div>
+            <p className="text-main">{title}</p>
+            <p className="text-gray-600 text-xs">{subtitle}</p>
+          </div>
+        </div>
+      </a>
+    );
+  }
+
   return (
     <div
       onClick={() => router.push(route)}
@@ -147,6 +166,22 @@ export default function MemberNavbar() {
                     title="Leagues"
                     router={router}
                     subtitle="View league rosters and manage your enrollment"
+                  />
+                </div>
+              </div>
+            </div>
+          </MenuNavAnchor>
+          <MenuNavAnchor title="About">
+            <div className="hidden group-hover:block hover:block z-50 absolute w-[325px] top-full pt-4 left-0">
+              <div className="shadow-sm border rounded-xl border-gray-300 bg-white">
+                <div className="flex flex-col p-2 gap-2 text-gray-400">
+                  <MemberNavMenuItem
+                    route=""
+                    icon={faLandmark}
+                    title="Club bylaws"
+                    router={router}
+                    href="/CRTC_By_Laws_Nov2020.pdf"
+                    subtitle="Download the CRTC club bylaws"
                   />
                 </div>
               </div>

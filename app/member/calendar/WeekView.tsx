@@ -3,7 +3,7 @@
 import { useMemo } from "react";
 import { useQueries } from "@tanstack/react-query";
 import { apiFetch } from "@/app/clients/api";
-import { toEasternISO } from "@/app/utils";
+import { getReservationColors, toEasternISO } from "@/app/utils";
 import { GetSlotsApiResponse } from "@/app/types";
 
 const COURTS = [1, 2, 3, 4];
@@ -106,15 +106,14 @@ export default function WeekView({
                   >
                     <div className="grid grid-cols-2 gap-1 w-fit mx-auto">
                       {COURTS.map((court) => {
-                        const booked = slot
-                          ? court in slot.reservationsByCourt
-                          : false;
+                        const reservation = slot?.reservationsByCourt[court];
+                        const dotColor = reservation
+                          ? getReservationColors(reservation.type).dot
+                          : "bg-gray-200";
                         return (
                           <div
                             key={court}
-                            className={`w-2.5 h-2.5 rounded-full ${
-                              booked ? "bg-amber-400" : "bg-gray-200"
-                            }`}
+                            className={`w-2.5 h-2.5 rounded-full ${dotColor}`}
                           />
                         );
                       })}

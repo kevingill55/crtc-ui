@@ -7,6 +7,7 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import Link from "next/link";
+import { getReservationColors } from "@/app/utils";
 import ProtectedPage from "../../components/ProtectedPage";
 import { useProtectedRoute } from "../../hooks/useProtectedRoute";
 import { Modal } from "../../components/Modal";
@@ -73,11 +74,6 @@ const getCourtsDisplay = (item: Reservation) => {
     : `Courts ${courts.join(", ")}`;
 };
 
-const TYPE_BADGE: Record<string, { label: string; cls: string }> = {
-  REGULAR: { label: "Play on your own", cls: "bg-blue-100 text-blue-700" },
-  LEAGUE: { label: "League", cls: "bg-green-100 text-green-700" },
-  CLUB: { label: "Club", cls: "bg-purple-100 text-purple-700" },
-};
 
 export default function MyReservations() {
   const { addNotification } = useNotificationsContext();
@@ -339,7 +335,7 @@ export default function MyReservations() {
                 </p>
                 <div className="flex flex-col gap-2">
                   {items.map((item) => {
-                    const badge = TYPE_BADGE[item.type ?? "REGULAR"];
+                    const { badge, accent } = getReservationColors(item.type);
                     const canEdit =
                       item.can_manage &&
                       (item.type === "REGULAR" || item.type === "CLUB");
@@ -350,7 +346,7 @@ export default function MyReservations() {
                       >
                         {/* Left: name + type badge */}
                         <div className="flex items-center gap-3 min-w-0">
-                          <div className="shrink-0 w-1 h-10 bg-blue-300 rounded-full" />
+                          <div className={`shrink-0 w-1 h-10 ${accent} rounded-full`} />
                           <div className="min-w-0">
                             <div className="flex items-center gap-2 flex-wrap">
                               <p className="font-medium text-gray-800 truncate">
