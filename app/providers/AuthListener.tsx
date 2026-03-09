@@ -24,12 +24,14 @@ export function AuthListener() {
       if (event === "SIGNED_OUT") {
         const pathname =
           typeof window !== "undefined" ? window.location.pathname : "";
-        // Let the /logout page handle its own redirect
         if (pathname.startsWith("/logout") || pathname.startsWith("/login")) {
           return;
         }
         queryClient.clear();
-        router.push("/login");
+        // Only redirect to login from protected routes
+        if (pathname.startsWith("/member") || pathname.startsWith("/admin")) {
+          router.push("/login");
+        }
       }
     });
 

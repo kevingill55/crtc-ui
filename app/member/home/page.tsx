@@ -136,7 +136,7 @@ function UpcomingPreview() {
         <h2 className="font-semibold text-primary">Upcoming Reservations</h2>
         <Link
           href="/member/reservations"
-          className="text-xs text-primary/70 hover:text-primary flex items-center gap-1.5 transition-colors"
+          className="text-xs font-bold text-primary/70 hover:text-primary flex items-center gap-1.5 transition-colors"
         >
           Manage all <FontAwesomeIcon icon={faArrowRight} size="xs" />
         </Link>
@@ -155,7 +155,7 @@ function UpcomingPreview() {
             href="/member/reserve"
             className="text-xs text-primary hover:underline mt-1"
           >
-            Reserve a court →
+            Reserve a court
           </Link>
         </div>
       ) : (
@@ -207,12 +207,6 @@ export default function Home() {
             <p className="text-white/60 mt-1 text-sm">
               Charles River Tennis Club
             </p>
-            <Link href="/member/reserve">
-              <button className="mt-6 bg-classic-tennis hover:bg-classic-tennis/80 text-white px-5 py-2.5 rounded-lg text-sm font-semibold flex items-center gap-2 hover:cursor-pointer transition-colors">
-                Reserve a court
-                <FontAwesomeIcon icon={faArrowRight} />
-              </button>
-            </Link>
           </div>
         </div>
 

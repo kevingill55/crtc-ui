@@ -63,8 +63,6 @@ export default function Members() {
             <AccountTableHeading title={"Name"} />
             <AccountTableHeading title={"Email"} />
             <AccountTableHeading title={"Phone"} />
-            <AccountTableHeading title={"Address"} />
-            <AccountTableHeading title={"Gender"} />
           </tr>
         </thead>
         <tbody className="border border-gray-200">
@@ -82,8 +80,6 @@ export default function Members() {
               <td className="text-sm text-center p-3 text-nowrap">
                 {it.phone_number}
               </td>
-              <td className="text-sm text-center p-3">{it.address}</td>
-              <td className="text-sm text-center p-3">{it.gender}</td>
             </tr>
           ))}
         </tbody>

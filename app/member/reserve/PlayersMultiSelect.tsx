@@ -72,6 +72,7 @@ export const PlayersMultiSelect = ({
 
   const handleToggle = (id: string) => {
     if (id === currentUserId) return;
+    setFilter("");
     setLocalPlayers((prev) =>
       prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
     );
