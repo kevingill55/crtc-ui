@@ -12,8 +12,8 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Suspense, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { Loading } from "@/app/components/Loading";
-import { toEasternISO } from "@/app/utils";
-import { PlayersMultiSelect } from "./PlayersMultiSelect";
+import { toEasternISO, getSlotLabel, isWateringSlot } from "@/app/utils";
+import { PlayersMultiSelectModal } from "./PlayersMultiSelectModal";
 import { SlotCourtGrid } from "./SlotCourtGrid";
 import { GetSlotsApiResponse, League, MemberRole } from "@/app/types";
 
@@ -22,18 +22,6 @@ const courtDropdownOptions: DropdownOption[] = [
   { label: "Court 2 (Lower)", value: 2 },
   { label: "Court 3 (Upper)", value: 3 },
   { label: "Court 4 (Upper)", value: 4 },
-];
-
-const slotDropdownOptions: DropdownOption[] = [
-  { label: "8:30 - 10:00 am", value: 1 },
-  { label: "10:00 - 11:30 am", value: 2 },
-  { label: "11:30 - 1:00 pm", value: 3 },
-  { label: "1:00 - 2:30 pm", value: 4 },
-  { label: "2:30 - 4:00 pm", value: 5 },
-  { label: "4:00 - 5:30 pm", value: 6 },
-  { label: "5:30 - 7:00 pm", value: 7 },
-  { label: "7:00 - 8:30 pm", value: 8 },
-  { label: "8:30 - 10:00 pm", value: 9 },
 ];
 
 function ReserveForm() {
@@ -59,15 +47,24 @@ function ReserveForm() {
   const [date, setDate] = useState(searchParams.get("date") || "");
   const [slot, setSlot] = useState(Number(searchParams.get("slot")) || 0);
   const [court, setCourt] = useState(Number(searchParams.get("court")) || 0);
+
+  // Slot labels depend on which court is selected; watering slots are excluded.
+  const slotDropdownOptions = useMemo<DropdownOption[]>(() => {
+    const refCourt = court > 0 ? court : 4;
+    return Array.from({ length: 9 }, (_, i) => i + 1)
+      .filter((s) => court === 0 || !isWateringSlot(s, court))
+      .map((s) => ({ label: getSlotLabel(s, refCourt), value: s }));
+  }, [court]);
+
+  // Clear slot selection if the chosen court makes the current slot a watering slot.
+  useEffect(() => {
+    if (slot !== 0 && court !== 0 && isWateringSlot(slot, court)) {
+      setSlot(0);
+    }
+  }, [slot, court]);
   const [selectedCells, setSelectedCells] = useState<Set<string>>(new Set());
   const [players, setPlayers] = useState<string[]>([]);
 
-  // Pre-select the current user when in personal/regular booking mode.
-  useEffect(() => {
-    if (!showLeagueForm && user?.id && !players.includes(user.id)) {
-      setPlayers([user.id]);
-    }
-  }, [showLeagueForm, user?.id]);
   const [reservationName, setReservationName] = useState("");
   const [repeatWeekly, setRepeatWeekly] = useState(false);
   const [repeatWeeks, setRepeatWeeks] = useState(4);
@@ -192,7 +189,7 @@ function ReserveForm() {
   };
 
   const handleOnClear = () => {
-    setPlayers(!showLeagueForm && user?.id ? [user.id] : []);
+    setPlayers([]);
     setDate("");
     setSlot(0);
     setCourt(0);
@@ -208,7 +205,7 @@ function ReserveForm() {
     setSlot(0);
     setCourt(0);
     setSelectedCells(new Set());
-    setPlayers(mode === "personal" && user?.id ? [user.id] : []);
+    setPlayers([]);
     setReservationName(mode === "league" ? selectedLeague?.name ?? "" : "");
   };
 
@@ -314,18 +311,18 @@ function ReserveForm() {
     (showLeagueForm ? !leagueSubmitReady : slot === 0 || court === 0);
 
   return (
-    <ProtectedPage title="Reserve">
+    <ProtectedPage title="Schedule court time">
       <div className="w-full pt-2 flex flex-col h-full gap-6">
         {/* Header */}
         <div>
-          <h1 className="text-primary font-bold text-2xl">
+          {/* <h1 className="text-primary font-bold text-2xl">
             Schedule court time
-          </h1>
-          <p className="text-sm text-gray-500">
+          </h1> */}
+          {/* <p className="text-sm text-gray-500">
             {showLeagueForm
               ? "Create reservations for league matches and club events."
               : "Create reservations and include all members of your party; you can only reserve court time once per day."}
-          </p>
+          </p> */}
 
           {/* Mode toggle — admins and coordinators */}
           {(isAdmin || isLeagueCoordinator) && (
@@ -525,10 +522,9 @@ function ReserveForm() {
           <div className="flex w-1/2">
             <div className="w-full">
               <label className="text-gray-600">Players</label>
-              <PlayersMultiSelect
+              <PlayersMultiSelectModal
                 players={players}
                 onSave={(newPlayers) => setPlayers(newPlayers)}
-                currentUserId={!showLeagueForm ? user?.id : undefined}
               />
             </div>
           </div>

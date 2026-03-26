@@ -17,6 +17,7 @@ import {
   faArrowRightFromBracket,
   faTrophy,
   faLandmark,
+  faUserPlus,
 } from "@fortawesome/free-solid-svg-icons";
 import { AppRouterInstance } from "next/dist/shared/lib/app-router-context.shared-runtime";
 import { PropsWithChildren } from "react";
@@ -124,19 +125,19 @@ export default function MemberNavbar() {
                     subtitle="View all events and court availability at CRTC"
                   />
                   <MemberNavMenuItem
+                    route="/member/leagues"
+                    icon={faTrophy}
+                    title="Leagues"
+                    router={router}
+                    subtitle="View league rosters and manage your enrollment"
+                  />
+                  <MemberNavMenuItem
                     route="/member/friday"
                     icon={faMoon}
                     title="Friday night tennis"
                     router={router}
                     subtitle="Organized fun and competitive play followed by
                         socializing and food and drinks"
-                  />
-                  <MemberNavMenuItem
-                    route="/member/open"
-                    icon={faBookmark}
-                    title="Drop-in tennis"
-                    router={router}
-                    subtitle="Dedicated open tennis court time"
                   />
                 </div>
               </div>
@@ -160,21 +161,6 @@ export default function MemberNavbar() {
                     router={router}
                     subtitle="Notes from all board and club meetings"
                   />
-                  <MemberNavMenuItem
-                    route="/member/leagues"
-                    icon={faTrophy}
-                    title="Leagues"
-                    router={router}
-                    subtitle="View league rosters and manage your enrollment"
-                  />
-                </div>
-              </div>
-            </div>
-          </MenuNavAnchor>
-          <MenuNavAnchor title="About">
-            <div className="hidden group-hover:block hover:block z-50 absolute w-[325px] top-full pt-4 left-0">
-              <div className="shadow-sm border rounded-xl border-gray-300 bg-white">
-                <div className="flex flex-col p-2 gap-2 text-gray-400">
                   <MemberNavMenuItem
                     route=""
                     icon={faLandmark}
@@ -201,6 +187,13 @@ export default function MemberNavbar() {
                       subtitle="Dashboard to view and manage all membership accounts"
                     />
                     <MemberNavMenuItem
+                      route="/admin/create-member"
+                      icon={faUserPlus}
+                      title="Create member"
+                      router={router}
+                      subtitle="Create a new auth account and CRTC member in one step"
+                    />
+                    <MemberNavMenuItem
                       route="/admin/email"
                       icon={faEnvelope}
                       title="Email"
@@ -215,6 +208,12 @@ export default function MemberNavbar() {
         </div>
 
         <div className="flex items-center gap-2 w-min h-min">
+          <Link href="/member/calendar">
+            <div className="group hover:cursor-pointer hover:bg-classic-tennis/80 text-white bg-classic-tennis rounded-sm shadow-xl px-4 py-2 flex items-center gap-2">
+              <span className="text-nowrap">Calendar</span>
+              <FontAwesomeIcon icon={faCalendar} />
+            </div>
+          </Link>
           <Link href="/member/reserve">
             <div className="group hover:cursor-pointer hover:bg-classic-tennis/80 text-white bg-classic-tennis rounded-sm shadow-xl px-4 py-2 flex items-center gap-2">
               <span className="text-nowrap">Reserve</span>

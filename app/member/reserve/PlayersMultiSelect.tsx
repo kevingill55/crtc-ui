@@ -2,7 +2,7 @@
 import { apiFetch } from "@/app/clients/api";
 import { memberMatchesFilter } from "@/app/utils";
 import { Member } from "@/app/types";
-import { faCaretDown, faCaretUp, faXmark } from "@fortawesome/free-solid-svg-icons";
+import { faXmark } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { useQuery } from "@tanstack/react-query";
 import { useState, useEffect, useRef, useMemo } from "react";
@@ -10,166 +10,153 @@ import { useState, useEffect, useRef, useMemo } from "react";
 export const PlayersMultiSelect = ({
   players,
   onSave,
-  currentUserId,
 }: {
   players: string[];
   onSave: (players: string[]) => void;
-  currentUserId?: string;
 }) => {
   const [filter, setFilter] = useState("");
   const [isOpen, setIsOpen] = useState(false);
-  const [localPlayers, setLocalPlayers] = useState<string[]>(players);
-  const dropdownRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const filterRef = useRef<HTMLInputElement>(null);
 
   const { data: membersData } = useQuery<{ data: Member[] }>({
     queryKey: ["getMembers", "active"],
     queryFn: async () => {
-      const res = await apiFetch(`/api/members?status=ACTIVE`, {
-        method: "GET",
-      });
+      const res = await apiFetch(`/api/members?status=ACTIVE`, { method: "GET" });
       return res.json();
     },
   });
 
+  // Auto-focus the filter input when opening; clear it on close.
+  useEffect(() => {
+    if (isOpen) {
+      filterRef.current?.focus();
+    } else {
+      setFilter("");
+    }
+  }, [isOpen]);
+
+  // Close on click outside.
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
   const filteredMembers = useMemo(() => {
     if (!membersData) return [];
-    const base = filter
-      ? membersData.data.filter((m) => memberMatchesFilter(m, filter))
-      : membersData.data;
-    return [...base].sort((a, b) => {
-      const aSelected = localPlayers.includes(a.id);
-      const bSelected = localPlayers.includes(b.id);
+    if (filter) {
+      // While searching, keep order alphabetical so the list doesn't jump on toggle.
+      return membersData.data
+        .filter((m) => memberMatchesFilter(m, filter))
+        .sort((a, b) => a.first_name.localeCompare(b.first_name));
+    }
+    // No filter: selected members float to the top.
+    return [...membersData.data].sort((a, b) => {
+      const aSelected = players.includes(a.id);
+      const bSelected = players.includes(b.id);
       if (aSelected && !bSelected) return -1;
       if (!aSelected && bSelected) return 1;
       return a.first_name.localeCompare(b.first_name);
     });
-  }, [membersData, filter, localPlayers]);
+  }, [membersData, filter, players]);
 
-  const selectedNames = useMemo(() => {
+  const selectedMembers = useMemo(() => {
     if (!membersData) return [];
     return players
       .map((id) => membersData.data.find((m) => m.id === id))
-      .filter((m): m is Member => !!m)
-      .map((m) => `${m.first_name} ${m.last_name}`);
+      .filter((m): m is Member => !!m);
   }, [players, membersData]);
 
-  const handleOpen = () => {
-    setLocalPlayers(players);
-    setIsOpen(true);
-  };
-
-  const handleSave = () => {
-    onSave(localPlayers);
-    setFilter("");
-    setIsOpen(false);
-  };
-
-  const handleCancel = () => {
-    setLocalPlayers(players);
-    setFilter("");
-    setIsOpen(false);
-  };
-
   const handleToggle = (id: string) => {
-    if (id === currentUserId) return;
-    setFilter("");
-    setLocalPlayers((prev) =>
-      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
-    );
+    onSave(players.includes(id) ? players.filter((x) => x !== id) : [...players, id]);
   };
 
-  useEffect(() => {
-    // @ts-expect-error cant figure out the type just yet
-    const handleClickOutside = (event) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-        handleCancel();
-      }
-    };
-    document.addEventListener("click", handleClickOutside);
-    return () => document.removeEventListener("click", handleClickOutside);
-  }, [players]);
+  const handleRemove = (e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
+    onSave(players.filter((x) => x !== id));
+  };
 
   return (
-    <div className="relative" ref={dropdownRef}>
-      <div onClick={() => (isOpen ? handleCancel() : handleOpen())}>
-        <div className="bg-white px-2.5 min-w-24 py-1.5 hover:cursor-pointer hover:bg-gray-200 flex flex-wrap items-center gap-1.5 border rounded-lg border-gray-300 text-sm min-h-9">
-          {selectedNames.length > 0 ? (
-            selectedNames.map((name) => (
-              <span
-                key={name}
-                className="bg-primary text-white px-2 py-0.5 rounded-full text-xs"
+    <div className="relative" ref={containerRef}>
+      {/* Trigger */}
+      <div
+        onClick={() => setIsOpen(true)}
+        className="bg-white px-2.5 min-w-24 py-1.5 cursor-pointer hover:bg-gray-50 flex flex-wrap items-center gap-1.5 border rounded-lg border-gray-300 text-sm min-h-9"
+      >
+        {selectedMembers.length > 0 ? (
+          selectedMembers.map((m) => (
+            <span
+              key={m.id}
+              className="bg-primary text-white pl-2 pr-1 py-0.5 rounded-full text-xs flex items-center gap-1"
+            >
+              {m.first_name} {m.last_name}
+              <button
+                type="button"
+                onClick={(e) => handleRemove(e, m.id)}
+                className="hover:bg-white/20 rounded-full p-0.5 cursor-pointer"
               >
-                {name}
-              </span>
-            ))
-          ) : (
-            <span className="text-gray-500">Add players</span>
-          )}
-          <FontAwesomeIcon
-            icon={!isOpen ? faCaretDown : faCaretUp}
-            className="ml-auto"
-          />
-        </div>
+                <FontAwesomeIcon icon={faXmark} className="w-2.5 h-2.5" />
+              </button>
+            </span>
+          ))
+        ) : (
+          <span className="text-gray-400">Add players</span>
+        )}
       </div>
+
+      {/* Dropdown */}
       {isOpen && (
-        <div className="absolute right-0 min-w-36 w-full z-10 mt-2 origin-top-right overflow-auto bg-white outline-1 outline-gray-300 text-primary rounded-md">
-          <div className="p-3 border-b border-gray-200 flex items-center gap-2">
-            <div className="relative flex-1">
+        <div className="absolute left-0 right-0 z-10 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg">
+          <div className="p-2 border-b border-gray-100">
+            <div className="relative">
               <input
+                ref={filterRef}
                 type="text"
-                placeholder="Filter"
-                className="px-4 py-1 w-full rounded-lg border border-gray-300 focus:outline-1 focus:outline-primary hover:border-gray-500 pr-8"
+                placeholder="Search members"
+                className="w-full px-3 py-1.5 rounded-md border border-gray-300 focus:outline-1 focus:outline-primary text-sm pr-7"
                 value={filter}
                 onChange={(e) => setFilter(e.target.value)}
               />
               {filter && (
                 <button
+                  type="button"
                   onClick={() => setFilter("")}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 hover:cursor-pointer"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 cursor-pointer"
                 >
-                  <FontAwesomeIcon icon={faXmark} />
+                  <FontAwesomeIcon icon={faXmark} className="w-3 h-3" />
                 </button>
               )}
             </div>
-            <button
-              onClick={handleCancel}
-              className="px-3 py-1 rounded-lg text-sm text-primary border border-primary hover:bg-gray-100 hover:cursor-pointer whitespace-nowrap"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={handleSave}
-              className="px-3 py-1 rounded-lg text-sm bg-primary text-white hover:bg-primary/80 hover:cursor-pointer whitespace-nowrap"
-            >
-              Save
-            </button>
           </div>
-          <div className="py-1 overflow-auto max-h-64">
-            {filteredMembers.map((it) => {
-              const isCurrentUser = it.id === currentUserId;
-              return (
-                <div
-                  key={it.id}
-                  onClick={() => handleToggle(it.id)}
-                  className={`block px-2.5 py-2 ${
-                    isCurrentUser
-                      ? "opacity-50 cursor-not-allowed"
-                      : "hover:cursor-pointer hover:bg-gray-200"
-                  }`}
-                >
-                  <div className="flex items-center gap-4">
+          <div className="overflow-auto max-h-60 py-1">
+            {filteredMembers.length === 0 ? (
+              <p className="text-sm text-gray-400 px-3 py-2">No members found</p>
+            ) : (
+              filteredMembers.map((m) => {
+                const isSelected = players.includes(m.id);
+                return (
+                  <div
+                    key={m.id}
+                    onClick={() => handleToggle(m.id)}
+                    className="flex items-center gap-3 px-3 py-2 hover:bg-gray-50 cursor-pointer"
+                  >
                     <div
-                      className={`w-4 h-4 rounded border border-primary ${
-                        localPlayers.includes(it.id) && "bg-primary"
+                      className={`w-4 h-4 rounded border shrink-0 ${
+                        isSelected ? "bg-primary border-primary" : "border-gray-300"
                       }`}
-                    ></div>
-                    <p>
-                      {it.first_name} {it.last_name}
-                    </p>
+                    />
+                    <span className="text-sm">
+                      {m.first_name} {m.last_name}
+                    </span>
                   </div>
-                </div>
-              );
-            })}
+                );
+              })
+            )}
           </div>
         </div>
       )}

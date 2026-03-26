@@ -1,18 +1,10 @@
 "use client";
 
-const SLOT_LABELS = [
-  "8:30 - 10:00 am",
-  "10:00 - 11:30 am",
-  "11:30 - 1:00 pm",
-  "1:00 - 2:30 pm",
-  "2:30 - 4:00 pm",
-  "4:00 - 5:30 pm",
-  "5:30 - 7:00 pm",
-  "7:00 - 8:30 pm",
-  "8:30 - 10:00 pm",
-];
+import { getSlotLabel, isWateringSlot } from "@/app/utils";
 
-const COURTS = [1, 2, 3, 4];
+const LOWER_COURTS = [1, 2];
+const UPPER_COURTS = [3, 4];
+const SLOTS = Array.from({ length: 9 }, (_, i) => i + 1);
 
 export function SlotCourtGrid({
   selectedCells,
@@ -23,13 +15,16 @@ export function SlotCourtGrid({
   onToggle: (slot: number, court: number) => void;
   bookedCells: Set<string>;
 }) {
-  return (
-    <div className="overflow-x-auto">
+  const renderSection = (courts: number[], label: string) => (
+    <div>
+      <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">
+        {label}
+      </p>
       <table className="border-collapse">
         <thead>
           <tr>
             <th className="text-left pr-4 pb-2 text-gray-500 font-medium w-36"></th>
-            {COURTS.map((court) => (
+            {courts.map((court) => (
               <th
                 key={court}
                 className="px-2 pb-2 text-gray-500 font-medium text-center w-16"
@@ -40,33 +35,40 @@ export function SlotCourtGrid({
           </tr>
         </thead>
         <tbody>
-          {SLOT_LABELS.map((label, slotIdx) => {
-            const slot = slotIdx + 1;
+          {SLOTS.map((slot) => {
+            const slotLabel = getSlotLabel(slot, courts[0]);
             return (
               <tr key={slot}>
                 <td className="pr-4 py-1 text-gray-600 text-sm whitespace-nowrap">
-                  {label}
+                  {slotLabel}
                 </td>
-                {COURTS.map((court) => {
+                {courts.map((court) => {
                   const key = `${slot}-${court}`;
+                  const isWatering = isWateringSlot(slot, court);
                   const isBooked = bookedCells.has(key);
                   const isSelected = selectedCells.has(key);
                   return (
                     <td key={court} className="px-2 py-1 text-center">
-                      <button
-                        type="button"
-                        disabled={isBooked}
-                        onClick={() => onToggle(slot, court)}
-                        className={`w-14 h-9 rounded text-xs font-medium transition-colors ${
-                          isBooked
-                            ? "bg-gray-200 text-gray-400 cursor-not-allowed line-through border border-gray-200"
-                            : isSelected
-                            ? "bg-primary text-white border border-primary"
-                            : "bg-white hover:bg-gray-100 border border-gray-300"
-                        }`}
-                      >
-                        {isBooked ? "—" : isSelected ? "✓" : ""}
-                      </button>
+                      {isWatering ? (
+                        <div className="w-14 h-9 rounded text-xs font-medium bg-blue-50 border border-gray-200 text-gray-400 flex items-center justify-center cursor-default">
+                          💧
+                        </div>
+                      ) : (
+                        <button
+                          type="button"
+                          disabled={isBooked}
+                          onClick={() => onToggle(slot, court)}
+                          className={`w-14 h-9 rounded text-xs font-medium transition-colors ${
+                            isBooked
+                              ? "bg-gray-200 text-gray-400 cursor-not-allowed line-through border border-gray-200"
+                              : isSelected
+                              ? "bg-primary text-white border border-primary"
+                              : "bg-white hover:bg-gray-100 border border-gray-300"
+                          }`}
+                        >
+                          {isBooked ? "—" : isSelected ? "✓" : ""}
+                        </button>
+                      )}
                     </td>
                   );
                 })}
@@ -75,6 +77,13 @@ export function SlotCourtGrid({
           })}
         </tbody>
       </table>
+    </div>
+  );
+
+  return (
+    <div className="overflow-x-auto flex gap-10">
+      {renderSection(LOWER_COURTS, "Lower Courts")}
+      {renderSection(UPPER_COURTS, "Upper Courts")}
     </div>
   );
 }
