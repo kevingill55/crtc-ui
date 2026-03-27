@@ -93,6 +93,8 @@ export type League = {
   name: string;
   coordinator_id: string | null;
   coordinator: { first_name: string; last_name: string } | null;
+  current_season: (LeagueSeason & { enrolled_count: number; waitlisted_count: number }) | null;
+  my_enrollment: "ACTIVE" | "WAITLISTED" | null;
 };
 
 export type LeagueSeason = {
