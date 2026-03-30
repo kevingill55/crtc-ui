@@ -169,6 +169,14 @@ export default function MemberNavbar() {
                     href="/CRTC_By_Laws_Nov2020.pdf"
                     subtitle="Download the CRTC club bylaws"
                   />
+                  <MemberNavMenuItem
+                    route=""
+                    icon={faLandmark}
+                    title="Court conduct & rules"
+                    router={router}
+                    href="/CRTC_ConductAndRules.pdf"
+                    subtitle="Download the CRTC court conduct and rules"
+                  />
                 </div>
               </div>
             </div>

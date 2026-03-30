@@ -91,6 +91,7 @@ export type DayAvailability = {
 export type League = {
   id: string;
   name: string;
+  type: "SINGLES" | "DOUBLES";
   coordinator_id: string | null;
   coordinator: { first_name: string; last_name: string } | null;
   current_season: (LeagueSeason & { enrolled_count: number; waitlisted_count: number }) | null;
@@ -112,9 +113,16 @@ export type LeagueEnrollment = {
   id: string;
   season_id: string;
   member_id: string;
+  partner_id: string | null;
   status: "ACTIVE" | "WAITLISTED" | "WITHDRAWN";
   enrolled_at: string;
   members: {
+    id: string;
+    first_name: string;
+    last_name: string;
+    email: string;
+  } | null;
+  partner: {
     id: string;
     first_name: string;
     last_name: string;

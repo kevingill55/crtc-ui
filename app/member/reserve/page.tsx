@@ -308,6 +308,7 @@ function ReserveForm() {
   const isSubmitDisabled =
     isPending ||
     !dateStatus?.valid ||
+    players.length === 0 ||
     (showLeagueForm ? !leagueSubmitReady : slot === 0 || court === 0);
 
   return (

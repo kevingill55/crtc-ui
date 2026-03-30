@@ -48,9 +48,10 @@ export const NotificationsProvider = (props: PropsWithChildren) => {
     if (notif.id === "temp") {
       notif.id = uuidv4();
     }
-    const updatedNotifications: Notification[] = [...notifications];
-    updatedNotifications.push(notif);
-    setNotifications(updatedNotifications);
+    setNotifications((prev) => {
+      const filtered = prev.filter((n) => n.id !== notif.id);
+      return [...filtered, notif];
+    });
   };
 
   const removeNotification = (id: string) => {
