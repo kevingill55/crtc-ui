@@ -9,7 +9,7 @@ import {
   useNotificationsContext,
 } from "@/app/providers/Notifications";
 import { useState } from "react";
-import { League, LeagueEnrollment, LeagueSeason } from "@/app/types";
+import { League, LeagueEnrollment, LeagueSeason, MemberRole } from "@/app/types";
 
 type SessionWithCounts = LeagueSeason & {
   enrolled_count: number;
@@ -323,7 +323,74 @@ export default function Friday() {
     },
   });
 
-  const isMutating = enrollPending || withdrawPending;
+  // ── LC management ────────────────────────────────────────────────────────
+  const isLC =
+    user?.role === MemberRole.LEAGUE_COORDINATOR &&
+    !!fntLeague &&
+    fntLeague.coordinator_id === user?.id;
+
+  const [showOpenModal, setShowOpenModal] = useState(false);
+  const [sessionName, setSessionName] = useState("");
+
+  const { mutate: openNewSession, isPending: openPending } = useMutation({
+    mutationFn: async (name: string) => {
+      const res = await apiFetch(`/api/leagues/${fntLeague!.id}/seasons`, {
+        method: "POST",
+        body: JSON.stringify({ name }),
+      });
+      return res.json();
+    },
+    onSuccess: (data) => {
+      if (data.success) {
+        setShowOpenModal(false);
+        setSessionName("");
+        invalidate();
+        addNotification({
+          status: NotificationStatus.SUCCESS,
+          id: "fnt-open",
+          expiresIn: 5000,
+          title: "Session opened — signups are live",
+        });
+      } else {
+        addNotification({
+          status: NotificationStatus.ERROR,
+          id: "fnt-open",
+          expiresIn: 5000,
+          title: data.message ?? "Could not open session",
+        });
+      }
+    },
+  });
+
+  const { mutate: closeSession, isPending: closePending } = useMutation({
+    mutationFn: async (sessionId: string) => {
+      const res = await apiFetch(`/api/seasons/${sessionId}/status`, {
+        method: "PATCH",
+        body: JSON.stringify({ status: "COMPLETED" }),
+      });
+      return res.json();
+    },
+    onSuccess: (data) => {
+      if (data.success) {
+        invalidate();
+        addNotification({
+          status: NotificationStatus.SUCCESS,
+          id: "fnt-close",
+          expiresIn: 5000,
+          title: "Session closed",
+        });
+      } else {
+        addNotification({
+          status: NotificationStatus.ERROR,
+          id: "fnt-close",
+          expiresIn: 5000,
+          title: data.message ?? "Could not close session",
+        });
+      }
+    },
+  });
+
+  const isMutating = enrollPending || withdrawPending || openPending || closePending;
   const isLoading = leaguesLoading || sessionsLoading;
 
   // ── Derived state ────────────────────────────────────────────────────────
@@ -407,23 +474,34 @@ export default function Friday() {
                   </div>
 
                   {/* Action buttons */}
-                  <div className="mt-4 flex gap-2">
-                    {myStatus === null && (
+                  <div className="mt-4 flex items-center justify-between gap-2 flex-wrap">
+                    <div className="flex gap-2">
+                      {myStatus === null && (
+                        <button
+                          onClick={() => enroll(fntLeague.id)}
+                          disabled={isMutating}
+                          className="px-5 py-2 text-sm rounded-lg bg-primary text-white hover:bg-primary/80 disabled:opacity-40 cursor-pointer"
+                        >
+                          {spotsLeft === 0 ? "Join Waitlist" : "Sign Up"}
+                        </button>
+                      )}
+                      {myStatus !== null && (
+                        <button
+                          onClick={() => withdraw(fntLeague.id)}
+                          disabled={isMutating}
+                          className="px-4 py-2 text-sm rounded-lg border border-gray-300 text-gray-600 hover:bg-gray-50 disabled:opacity-40 cursor-pointer"
+                        >
+                          {myStatus === "WAITLISTED" ? "Leave Waitlist" : "Withdraw"}
+                        </button>
+                      )}
+                    </div>
+                    {isLC && (
                       <button
-                        onClick={() => enroll(fntLeague.id)}
+                        onClick={() => closeSession(openSession.id)}
                         disabled={isMutating}
-                        className="px-5 py-2 text-sm rounded-lg bg-primary text-white hover:bg-primary/80 disabled:opacity-40 cursor-pointer"
+                        className="px-4 py-2 text-sm rounded-lg border border-red-200 text-red-600 hover:bg-red-50 disabled:opacity-40 cursor-pointer"
                       >
-                        {spotsLeft === 0 ? "Join Waitlist" : "Sign Up"}
-                      </button>
-                    )}
-                    {myStatus !== null && (
-                      <button
-                        onClick={() => withdraw(fntLeague.id)}
-                        disabled={isMutating}
-                        className="px-4 py-2 text-sm rounded-lg border border-gray-300 text-gray-600 hover:bg-gray-50 disabled:opacity-40 cursor-pointer"
-                      >
-                        {myStatus === "WAITLISTED" ? "Leave Waitlist" : "Withdraw"}
+                        {closePending ? "Closing..." : "Close session"}
                       </button>
                     )}
                   </div>
@@ -438,11 +516,61 @@ export default function Friday() {
                 </div>
               </div>
             ) : (
-              <div className="bg-white rounded-xl border border-gray-200 px-6 py-10 text-center">
-                <p className="text-gray-500 font-medium">No session open yet</p>
-                <p className="text-sm text-gray-400 mt-1">
-                  Check back Monday — signups typically open at the start of the week.
-                </p>
+              <div className="bg-white rounded-xl border border-gray-200 px-6 py-10 flex flex-col items-center gap-4 text-center">
+                <div>
+                  <p className="text-gray-500 font-medium">No session open yet</p>
+                  <p className="text-sm text-gray-400 mt-1">
+                    Check back Monday — signups typically open at the start of the week.
+                  </p>
+                </div>
+                {isLC && !showOpenModal && (
+                  <button
+                    onClick={() => {
+                      const friday = new Date();
+                      const day = friday.getDay();
+                      friday.setDate(friday.getDate() + ((5 - day + 7) % 7 || 7));
+                      const label = friday.toLocaleDateString("en-US", {
+                        month: "long",
+                        day: "numeric",
+                        timeZone: "America/New_York",
+                      });
+                      setSessionName(`Week of ${label}`);
+                      setShowOpenModal(true);
+                    }}
+                    className="px-5 py-2 text-sm rounded-lg bg-primary text-white hover:bg-primary/80 cursor-pointer"
+                  >
+                    Open new session
+                  </button>
+                )}
+                {isLC && showOpenModal && (
+                  <div className="w-full max-w-sm flex flex-col gap-3 text-left">
+                    <div className="flex flex-col gap-1">
+                      <label className="text-sm text-gray-600">Session name</label>
+                      <input
+                        autoFocus
+                        type="text"
+                        value={sessionName}
+                        onChange={(e) => setSessionName(e.target.value)}
+                        className="px-3 py-2 rounded-lg border border-gray-300 text-sm focus:outline-1 focus:outline-primary"
+                      />
+                    </div>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => sessionName.trim() && openNewSession(sessionName.trim())}
+                        disabled={!sessionName.trim() || isMutating}
+                        className="px-5 py-2 text-sm rounded-lg bg-primary text-white hover:bg-primary/80 disabled:opacity-40 cursor-pointer"
+                      >
+                        {openPending ? "Opening..." : "Open session"}
+                      </button>
+                      <button
+                        onClick={() => setShowOpenModal(false)}
+                        className="px-4 py-2 text-sm rounded-lg border border-gray-300 text-gray-600 hover:bg-gray-50 cursor-pointer"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 
