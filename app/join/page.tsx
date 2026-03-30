@@ -3,7 +3,7 @@
 import { apiFetch } from "../clients/api";
 import { useMutation } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { EmailInput, emailRegex } from "../components/EmailInput";
 import { PhoneInput } from "../components/PhoneInput";
 import { PublicPage } from "../components/PublicPage";
@@ -12,6 +12,7 @@ import {
   useNotificationsContext,
 } from "../providers/Notifications";
 import { Member } from "../types";
+import ReCAPTCHA from "react-google-recaptcha";
 
 export default function SignUp() {
   const [waiverAccepted, setWaiverAccepted] = useState(false);
@@ -21,8 +22,9 @@ export default function SignUp() {
   const [email, setEmail] = useState("");
   const [address, setAddress] = useState("");
   const [plan, setPlan] = useState("");
-  const [gender, setGender] = useState("");
   const [emailError, setEmailError] = useState("");
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+  const recaptchaRef = useRef<ReCAPTCHA>(null);
   const router = useRouter();
 
   const { addNotification } = useNotificationsContext();
@@ -41,7 +43,7 @@ export default function SignUp() {
             email,
             first_name: firstName,
             last_name: lastName,
-            gender: gender === "F" ? "Female" : "Male",
+
             phone_number: phone,
             plan: plan === "ADULT" ? "Adult" : "Junior",
             address,
@@ -76,6 +78,7 @@ export default function SignUp() {
             title:
               "You have been added to the waitlist. A confirmation will be sent to your email shortly.",
           });
+          recaptchaRef.current?.reset();
           router.push("/");
         }
       } catch (error) {
@@ -87,17 +90,17 @@ export default function SignUp() {
   const isDisabled = useMemo(() => {
     if (
       !waiverAccepted ||
+      !captchaToken ||
       loading ||
       email.length === 0 ||
       address.length === 0 ||
       phone.length === 0 ||
-      plan.length === 0 ||
-      gender.length === 0
+      plan.length === 0
     ) {
       return true;
     }
     return false;
-  }, [waiverAccepted, plan, email, loading, phone, address, gender]);
+  }, [waiverAccepted, captchaToken, plan, email, loading, phone, address]);
 
   return (
     <PublicPage>
@@ -181,83 +184,59 @@ export default function SignUp() {
         </div>
 
         <div className="flex gap-4 w-175 justify-between">
-          <div className="flex flex-col gap-2 w-full">
-            <label htmlFor="crtc-plan" className="text-gray-600">
-              Plan
-            </label>
-            <div className="flex gap-4 items-center">
-              <div
-                onClick={() => setPlan("ADULT")}
-                className="flex items-center gap-1 hover:cursor-pointer"
-              >
-                <div
-                  className={`rounded-full w-4 h-4 min-h-4 min-w-4 border border-gray-300 hover:cursor-pointer hover:bg-gray-200 ${
-                    plan === "ADULT" && "bg-blue-400 border-blue-400"
+          <fieldset className="flex flex-col gap-2 w-full">
+            <legend className="text-gray-600">Plan</legend>
+            <div className="flex gap-2 mt-1">
+              {(["ADULT", "JUNIOR"] as const).map((value) => (
+                <label
+                  key={value}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-lg border cursor-pointer transition-colors text-sm font-medium ${
+                    plan === value
+                      ? "border-primary bg-primary/10 text-primary"
+                      : "border-gray-300 text-gray-600 hover:border-gray-400 hover:bg-gray-50"
                   }`}
-                ></div>
-                <div>Adult</div>
-              </div>
-              <div
-                onClick={() => setPlan("JUNIOR")}
-                className="flex items-center gap-1 hover:cursor-pointer"
-              >
-                <div
-                  className={`rounded-full w-4 h-4 min-h-4 min-w-4 border border-gray-300 hover:cursor-pointer hover:bg-gray-200 ${
-                    plan === "JUNIOR" && "bg-blue-400 border-blue-400"
-                  }`}
-                ></div>
-                <div>Junior</div>
-              </div>
+                >
+                  <input
+                    type="radio"
+                    name="plan"
+                    value={value}
+                    checked={plan === value}
+                    onChange={() => setPlan(value)}
+                    className="sr-only"
+                  />
+                  {value === "ADULT" ? "Adult" : "Junior"}
+                </label>
+              ))}
             </div>
-          </div>
-          <div className="flex flex-col gap-2 w-full">
-            <label htmlFor="crtc-gender" className="text-gray-600">
-              Gender
-            </label>
-            <div className="flex gap-4 items-center">
-              <div
-                onClick={() => setGender("M")}
-                className="flex items-center gap-1 hover:cursor-pointer"
-              >
-                <div
-                  className={`rounded-full w-4 h-4 min-h-4 min-w-4 border border-gray-300 hover:cursor-pointer hover:bg-gray-200 ${
-                    gender === "M" && "bg-blue-400 border-blue-400"
-                  }`}
-                ></div>
-                <div>Male</div>
-              </div>
-              <div
-                onClick={() => setGender("F")}
-                className="flex items-center gap-1 hover:cursor-pointer"
-              >
-                <div
-                  className={`rounded-full w-4 h-4 min-h-4 min-w-4 border border-gray-300 hover:cursor-pointer hover:bg-gray-200 ${
-                    gender === "F" && "bg-blue-400 border-blue-400"
-                  }`}
-                ></div>
-                <div>Female</div>
-              </div>
-            </div>
-          </div>
+          </fieldset>
         </div>
 
         <div className="flex flex-col gap-4 w-175 mt-6">
-          <div className="flex flex-col gap-2">
-            <div className="flex items-center text-sm gap-2">
-              <div
-                onClick={() => setWaiverAccepted(!waiverAccepted)}
-                className={`rounded-full hover:cursor-pointer hover:bg-gray-200 w-4 h-4 min-h-4 min-w-4 border border-gray-300 ${
-                  waiverAccepted && "bg-blue-400 border-blue-400"
-                }`}
-              ></div>
-              <div>
-                {`I have read and agree to the`}{" "}
-                <span className="hover:cursor-pointer text-blue-500 hover:text-blue-400">
-                  Waiver, Release of Liability and Assumption of Risks
-                </span>
-              </div>
-            </div>
-          </div>
+          <label className="flex items-start gap-3 cursor-pointer text-sm text-gray-700">
+            <input
+              type="checkbox"
+              checked={waiverAccepted}
+              onChange={(e) => setWaiverAccepted(e.target.checked)}
+              className="mt-0.5 w-4 h-4 shrink-0 accent-primary cursor-pointer"
+            />
+            <span>
+              I have read and agree to the{" "}
+              <a
+                href="/CRTC_Waiver.pdf"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-primary hover:text-primary/70 underline"
+              >
+                Waiver, Release of Liability and Assumption of Risks
+              </a>
+            </span>
+          </label>
+          <ReCAPTCHA
+            ref={recaptchaRef}
+            sitekey={process.env.NEXT_PUBLIC_GOOGLE_SITE_KEY!}
+            onChange={(token) => setCaptchaToken(token)}
+            onExpired={() => setCaptchaToken(null)}
+          />
           <button
             disabled={isDisabled}
             onClick={(e) => {

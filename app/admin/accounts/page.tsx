@@ -12,7 +12,6 @@ import {
 } from "@/app/providers/Notifications";
 import {
   Member,
-  MemberGender,
   MemberPlanType,
   MemberStatus,
 } from "@/app/types";
@@ -175,20 +174,6 @@ const editModalContent = (
             options={[
               { label: MemberPlanType.ADULT, value: MemberPlanType.ADULT },
               { label: MemberPlanType.JUNIOR, value: MemberPlanType.JUNIOR },
-            ]}
-          />
-        </div>
-        <div className="flex flex-col gap-1">
-          <label className="text-gray-600 text-sm  leading-4">Gender</label>
-          <Dropdown
-            label={member.gender}
-            value={member.gender}
-            onSelect={(val) => {
-              setMember({ ...member, gender: val as MemberGender });
-            }}
-            options={[
-              { label: MemberGender.MALE, value: MemberGender.MALE },
-              { label: MemberGender.FEMALE, value: MemberGender.FEMALE },
             ]}
           />
         </div>

@@ -7,6 +7,7 @@ export const tanstackQueryClient = new QueryClient({
     queries: {
       refetchOnWindowFocus: false,
       staleTime: 1000 * 60 * 5,
+      retry: 1,
     },
   },
 });

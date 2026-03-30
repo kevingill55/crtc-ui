@@ -15,7 +15,6 @@ import {
   useNotificationsContext,
 } from "@/app/providers/Notifications";
 import {
-  MemberGender,
   MemberPlanType,
   MemberRole,
   MemberStatus,
@@ -45,7 +44,6 @@ export default function CreateMember() {
   const [phone, setPhone] = useState("");
   const [address, setAddress] = useState("");
   const [rating, setRating] = useState("");
-  const [gender, setGender] = useState<MemberGender>(MemberGender.MALE);
   const [plan, setPlan] = useState<MemberPlanType>(MemberPlanType.ADULT);
   const [status, setStatus] = useState<MemberStatus>(MemberStatus.ACTIVE);
   const [role, setRole] = useState<MemberRole>(MemberRole.MEMBER);
@@ -63,7 +61,6 @@ export default function CreateMember() {
           phone_number: phone,
           address,
           rating: parseFloat(rating),
-          gender,
           plan,
           status,
           role,
@@ -205,18 +202,6 @@ export default function CreateMember() {
           </div>
 
           {/* Dropdowns */}
-          <div className={FIELD_CLS}>
-            <label className={LABEL_CLS}>Gender</label>
-            <Dropdown
-              label={gender}
-              value={gender}
-              onSelect={(v) => setGender(v as MemberGender)}
-              options={[
-                { label: MemberGender.MALE, value: MemberGender.MALE },
-                { label: MemberGender.FEMALE, value: MemberGender.FEMALE },
-              ]}
-            />
-          </div>
           <div className={FIELD_CLS}>
             <label className={LABEL_CLS}>Plan</label>
             <Dropdown

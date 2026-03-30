@@ -11,11 +11,6 @@ export enum MemberRole {
   LEAGUE_COORDINATOR = "LEAGUE_COORDINATOR",
 }
 
-export enum MemberGender {
-  MALE = "Male",
-  FEMALE = "Female",
-}
-
 export enum MemberPlanType {
   ADULT = "Adult",
   JUNIOR = "Junior",
@@ -44,7 +39,6 @@ export type Member = {
   waiver: boolean;
   role: MemberRole;
   plan: MemberPlanType;
-  gender: MemberGender;
   status: MemberStatus;
 };
 
