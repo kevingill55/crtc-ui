@@ -96,7 +96,7 @@ export type LeagueSeason = {
   id: string;
   league_id: string;
   name: string;
-  status: "DRAFT" | "ENROLLMENT_OPEN" | "ACTIVE" | "COMPLETED";
+  status: "DRAFT" | "INACTIVE" | "ENROLLMENT_OPEN" | "ACTIVE" | "COMPLETED";
   start_date: string | null;
   end_date: string | null;
   max_players: number | null;

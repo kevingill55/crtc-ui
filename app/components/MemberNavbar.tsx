@@ -172,6 +172,14 @@ export default function MemberNavbar() {
                   <MemberNavMenuItem
                     route=""
                     icon={faLandmark}
+                    title="League Rules and Regulations"
+                    router={router}
+                    href="/CRTC_LeagueRulesAndRegulations.pdf"
+                    subtitle="View the rules of regulations of league play at CRTC"
+                  />
+                  <MemberNavMenuItem
+                    route=""
+                    icon={faLandmark}
                     title="Court conduct & rules"
                     router={router}
                     href="/CRTC_ConductAndRules.pdf"
