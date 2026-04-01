@@ -15,7 +15,7 @@ import { Loading } from "@/app/components/Loading";
 import { toEasternISO, getSlotLabel, isWateringSlot } from "@/app/utils";
 import { PlayersMultiSelectModal } from "./PlayersMultiSelectModal";
 import { SlotCourtGrid } from "./SlotCourtGrid";
-import { GetSlotsApiResponse, League, MemberRole } from "@/app/types";
+import { GetSlotsApiResponse, League } from "@/app/types";
 
 const courtDropdownOptions: DropdownOption[] = [
   { label: "Court 1 (Lower)", value: 1 },
@@ -30,19 +30,15 @@ function ReserveForm() {
   const searchParams = useSearchParams();
 
   const { user, isAdmin } = useProtectedRoute({ isAdmin: false });
-  const isLeagueCoordinator = user?.role === MemberRole.LEAGUE_COORDINATOR;
 
   // Admins and coordinators can toggle between their elevated event type and personal.
-  const [bookingMode, setBookingMode] = useState<
-    "league" | "club" | "personal"
-  >("personal");
+  const [bookingMode, setBookingMode] = useState<"league" | "club" | "personal">(() => {
+    const m = searchParams.get("mode");
+    if (m === "league") return "league";
+    if (m === "club") return "club";
+    return "personal";
+  });
   const [selectedLeagueId, setSelectedLeagueId] = useState<string | null>(null);
-
-  // Show the league/club multi-slot form vs the regular single-slot form.
-  const showLeagueForm =
-    bookingMode !== "personal" && (isAdmin || isLeagueCoordinator);
-  // Skip the 7-day booking window when booking as league/admin.
-  const skipBookingWindow = showLeagueForm;
 
   const [date, setDate] = useState(searchParams.get("date") || "");
   const [slot, setSlot] = useState(Number(searchParams.get("slot")) || 0);
@@ -63,7 +59,10 @@ function ReserveForm() {
     }
   }, [slot, court]);
   const [selectedCells, setSelectedCells] = useState<Set<string>>(new Set());
-  const [players, setPlayers] = useState<string[]>([]);
+  const [players, setPlayers] = useState<string[]>(() => {
+    const p = searchParams.get("players");
+    return p ? p.split(",").filter(Boolean) : [];
+  });
 
   const [reservationName, setReservationName] = useState("");
   const [repeatWeekly, setRepeatWeekly] = useState(false);
@@ -80,6 +79,26 @@ function ReserveForm() {
     max.setDate(now.getDate() + daysAhead);
     return { minDate: toEasternISO(now), maxDate: toEasternISO(max) };
   }, []);
+
+  // Fetch all leagues this member coordinates (empty for regular members).
+  const { data: myLeaguesData, isLoading: leaguesLoading } = useQuery<{
+    success: boolean;
+    data: League[];
+  }>({
+    queryKey: ["getMyLeagues"],
+    queryFn: async () => {
+      const res = await apiFetch("/api/leagues/mine", { method: "GET" });
+      return res.json();
+    },
+    enabled: !!user,
+  });
+  const myLeagues = myLeaguesData?.data ?? [];
+  const isLeagueCoordinator = myLeagues.length > 0;
+
+  // Show the league/club multi-slot form vs the regular single-slot form.
+  const showLeagueForm = bookingMode !== "personal" && (isAdmin || isLeagueCoordinator);
+  // Skip the 7-day booking window when booking as league/coordinator.
+  const skipBookingWindow = showLeagueForm;
 
   const dateStatus = useMemo(() => {
     if (!date) return null;
@@ -109,20 +128,6 @@ function ReserveForm() {
     }
     return { valid: true, message: null };
   }, [date, minDate, maxDate, skipBookingWindow]);
-
-  // Fetch all leagues this coordinator is assigned to.
-  const { data: myLeaguesData, isLoading: leaguesLoading } = useQuery<{
-    success: boolean;
-    data: League[];
-  }>({
-    queryKey: ["getMyLeagues"],
-    queryFn: async () => {
-      const res = await apiFetch("/api/leagues/mine", { method: "GET" });
-      return res.json();
-    },
-    enabled: isLeagueCoordinator,
-  });
-  const myLeagues = myLeaguesData?.data ?? [];
 
   // Auto-select when there's only one league.
   useEffect(() => {
@@ -316,15 +321,6 @@ function ReserveForm() {
       <div className="w-full pt-2 flex flex-col h-full gap-6">
         {/* Header */}
         <div>
-          {/* <h1 className="text-primary font-bold text-2xl">
-            Schedule court time
-          </h1> */}
-          {/* <p className="text-sm text-gray-500">
-            {showLeagueForm
-              ? "Create reservations for league matches and club events."
-              : "Create reservations and include all members of your party; you can only reserve court time once per day."}
-          </p> */}
-
           {/* Mode toggle — admins and coordinators */}
           {(isAdmin || isLeagueCoordinator) && (
             <div className="mt-3 flex gap-1 bg-gray-100 rounded-lg p-1 w-fit">

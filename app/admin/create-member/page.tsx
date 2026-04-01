@@ -24,7 +24,6 @@ import { normalizeString } from "@/app/utils";
 const ROLE_LABELS: Record<MemberRole, string> = {
   [MemberRole.MEMBER]: "Member",
   [MemberRole.ADMIN]: "Admin",
-  [MemberRole.LEAGUE_COORDINATOR]: "League Coordinator",
 };
 
 const FIELD_CLS = "flex flex-col gap-1";

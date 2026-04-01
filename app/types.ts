@@ -8,7 +8,6 @@ export enum MemberStatus {
 export enum MemberRole {
   ADMIN = "ADMIN",
   MEMBER = "MEMBER",
-  LEAGUE_COORDINATOR = "LEAGUE_COORDINATOR",
 }
 
 export enum MemberPlanType {

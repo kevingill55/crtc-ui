@@ -77,19 +77,20 @@ export default function DayView({
                             {reservation.name}
                           </p>
                           <div className="mt-1">
-                            {Array.from(
-                              {
-                                length: Math.ceil(
-                                  reservation.players.length / 2
-                                ),
-                              },
-                              (_, i) =>
-                                reservation.players.slice(i * 2, i * 2 + 2)
-                            ).map((pair, i) => (
-                              <p key={i} className="text-xs text-gray-600">
-                                {pair.join(", ")}
+                            {reservation.players.length > 5 ? (
+                              <p className="text-xs text-gray-600">
+                                {reservation.players.length} players
                               </p>
-                            ))}
+                            ) : (
+                              Array.from(
+                                { length: Math.ceil(reservation.players.length / 2) },
+                                (_, i) => reservation.players.slice(i * 2, i * 2 + 2)
+                              ).map((pair, i) => (
+                                <p key={i} className="text-xs text-gray-600">
+                                  {pair.join(", ")}
+                                </p>
+                              ))
+                            )}
                           </div>
                         </div>
                       ) : (
