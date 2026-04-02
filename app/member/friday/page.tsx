@@ -9,7 +9,15 @@ import {
   useNotificationsContext,
 } from "@/app/providers/Notifications";
 import { useState } from "react";
-import { League, LeagueEnrollment, LeagueSeason, Member } from "@/app/types";
+import {
+  League,
+  LeagueEnrollment,
+  LeagueSeason,
+  Member,
+  Reservation,
+} from "@/app/types";
+import { AssignmentsEditor, AssignmentsView } from "./AssignmentsPanel";
+import { getSlotLabel } from "@/app/utils";
 
 type SessionWithCounts = LeagueSeason & {
   enrolled_count: number;
@@ -24,17 +32,15 @@ type SessionEnrollmentsResponse = {
 
 // ── Shared sub-components ────────────────────────────────────────────────────
 
-function EnrollmentStatusBadge({ status }: { status: "ACTIVE" | "WAITLISTED" | null }) {
+function EnrollmentStatusBadge({
+  status,
+}: {
+  status: "ACTIVE" | "WAITLISTED" | null;
+}) {
   if (status === "ACTIVE")
     return (
       <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-green-100 text-green-700">
         Enrolled
-      </span>
-    );
-  if (status === "WAITLISTED")
-    return (
-      <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-amber-100 text-amber-700">
-        Waitlisted
       </span>
     );
   return null;
@@ -50,9 +56,7 @@ function PlayerList({
   const { data, isLoading } = useQuery<SessionEnrollmentsResponse>({
     queryKey: ["sessionEnrollments", sessionId],
     queryFn: async () => {
-      const res = await apiFetch(`/api/sessions/${sessionId}/enrollments`, {
-        method: "GET",
-      });
+      const res = await apiFetch(`/api/sessions/${sessionId}/enrollments`);
       return res.json();
     },
   });
@@ -62,11 +66,10 @@ function PlayerList({
 
   const enrollments = data?.data ?? [];
   const active = enrollments.filter((e) => e.status === "ACTIVE");
-  const waitlisted = enrollments.filter((e) => e.status === "WAITLISTED");
 
   return (
-    <div className="mt-4 flex flex-col gap-4">
-      {active.length > 0 && (
+    <div className="mt-4">
+      {active.length > 0 ? (
         <div>
           <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
             Players ({active.length})
@@ -78,14 +81,22 @@ function PlayerList({
                 <div
                   key={e.id}
                   className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm ${
-                    isMe ? "bg-primary/5" : i % 2 === 0 ? "bg-white" : "bg-gray-50"
+                    isMe
+                      ? "bg-primary/5"
+                      : i % 2 === 0
+                      ? "bg-white"
+                      : "bg-gray-50"
                   }`}
                 >
-                  <span className="text-gray-400 w-5 text-center text-xs">{i + 1}</span>
+                  <span className="text-gray-400 w-5 text-center text-xs">
+                    {i + 1}
+                  </span>
                   <span className="font-medium text-gray-800">
                     {e.members?.first_name} {e.members?.last_name}
                     {isMe && (
-                      <span className="ml-2 text-xs text-primary font-normal">(you)</span>
+                      <span className="ml-2 text-xs text-primary font-normal">
+                        (you)
+                      </span>
                     )}
                   </span>
                   <span className="text-gray-400 ml-auto">
@@ -100,38 +111,7 @@ function PlayerList({
             })}
           </div>
         </div>
-      )}
-
-      {waitlisted.length > 0 && (
-        <div>
-          <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
-            Waitlist ({waitlisted.length})
-          </p>
-          <div className="flex flex-col gap-1">
-            {waitlisted.map((e, i) => {
-              const isMe = e.member_id === currentUserId;
-              return (
-                <div
-                  key={e.id}
-                  className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm ${
-                    isMe ? "bg-amber-50" : i % 2 === 0 ? "bg-white" : "bg-gray-50"
-                  }`}
-                >
-                  <span className="text-gray-400 w-5 text-center text-xs">{i + 1}</span>
-                  <span className="font-medium text-gray-800">
-                    {e.members?.first_name} {e.members?.last_name}
-                    {isMe && (
-                      <span className="ml-2 text-xs text-amber-600 font-normal">(you)</span>
-                    )}
-                  </span>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
-
-      {active.length === 0 && waitlisted.length === 0 && (
+      ) : (
         <p className="text-sm text-gray-400">No one signed up yet.</p>
       )}
     </div>
@@ -146,33 +126,68 @@ function ClosedSession({
   currentUserId: string;
 }) {
   const [expanded, setExpanded] = useState(false);
+  const isCancelled = session.status === "CANCELLED";
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200">
+    <div
+      className={`bg-white rounded-xl border ${
+        isCancelled ? "border-gray-100" : "border-gray-200"
+      }`}
+    >
       <button
         onClick={() => setExpanded(!expanded)}
         className="w-full px-5 py-4 flex items-center justify-between gap-4 text-left hover:bg-gray-50 rounded-xl transition-colors"
       >
         <div className="flex items-center gap-2">
-          <p className="font-medium text-gray-700">{session.name}</p>
-          <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-gray-100 text-gray-400">
-            Closed
-          </span>
+          <p
+            className={`font-medium ${
+              isCancelled ? "text-gray-400" : "text-gray-700"
+            }`}
+          >
+            {session.name}
+          </p>
+          {isCancelled ? (
+            <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-red-50 text-red-400">
+              Cancelled
+            </span>
+          ) : (
+            <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-gray-100 text-gray-400">
+              Closed
+            </span>
+          )}
+          {session.start_date && (
+            <span className="text-xs text-gray-400">
+              {new Date(session.start_date).toLocaleDateString("en-US", {
+                month: "short",
+                day: "numeric",
+                timeZone: "UTC",
+              })}
+            </span>
+          )}
         </div>
         <div className="flex items-center gap-3 shrink-0">
-          <span className="text-sm text-gray-400">{session.enrolled_count} players</span>
+          <span className="text-sm text-gray-400">
+            {session.enrolled_count} players
+          </span>
           <svg
-            className={`w-4 h-4 text-gray-400 transition-transform ${expanded ? "rotate-180" : ""}`}
+            className={`w-4 h-4 text-gray-400 transition-transform ${
+              expanded ? "rotate-180" : ""
+            }`}
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
           >
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M19 9l-7 7-7-7"
+            />
           </svg>
         </div>
       </button>
 
-      {expanded && (
+      {expanded && !isCancelled && (
         <div className="border-t border-gray-100 px-5 py-4">
           <PlayerList sessionId={session.id} currentUserId={currentUserId} />
         </div>
@@ -180,8 +195,6 @@ function ClosedSession({
     </div>
   );
 }
-
-// ── Email modal ──────────────────────────────────────────────────────────────
 
 function EmailModal({
   enrollments,
@@ -214,10 +227,6 @@ function EmailModal({
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const handleMailto = () => {
-    window.location.href = `mailto:?bcc=${selectedEmails.join(",")}`;
-  };
-
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
       <div className="bg-white rounded-xl border border-gray-200 shadow-xl w-full max-w-md mx-4">
@@ -230,12 +239,11 @@ function EmailModal({
             ✕
           </button>
         </div>
-
         <div className="px-6 py-4 max-h-72 overflow-y-auto flex flex-col gap-2">
           {active.map((e) => (
             <label
               key={e.id}
-              className="flex items-center gap-3 cursor-pointer group"
+              className="flex items-center gap-3 cursor-pointer"
             >
               <input
                 type="checkbox"
@@ -246,14 +254,15 @@ function EmailModal({
               <span className="text-sm text-gray-800 font-medium">
                 {e.members?.first_name} {e.members?.last_name}
               </span>
-              <span className="text-xs text-gray-400 ml-auto">{e.members?.email}</span>
+              <span className="text-xs text-gray-400 ml-auto">
+                {e.members?.email}
+              </span>
             </label>
           ))}
           {active.length === 0 && (
             <p className="text-sm text-gray-400">No enrolled players.</p>
           )}
         </div>
-
         <div className="px-6 py-3 border-t border-gray-100 flex items-center gap-2 flex-wrap">
           <span className="text-xs text-gray-400 mr-auto">
             {selected.size} of {active.length} selected
@@ -273,14 +282,16 @@ function EmailModal({
           <button
             onClick={handleCopy}
             disabled={selected.size === 0}
-            className="px-3 py-1.5 text-sm rounded-lg border border-gray-300 text-gray-600 hover:bg-gray-50 disabled:opacity-40 cursor-pointer transition-colors"
+            className="px-3 py-1.5 text-sm rounded-lg border border-gray-300 text-gray-600 hover:bg-gray-50 disabled:opacity-40 cursor-pointer"
           >
             {copied ? "Copied!" : "Copy emails"}
           </button>
           <button
-            onClick={handleMailto}
+            onClick={() => {
+              window.location.href = `mailto:?bcc=${selectedEmails.join(",")}`;
+            }}
             disabled={selected.size === 0}
-            className="px-3 py-1.5 text-sm rounded-lg bg-primary text-white hover:bg-primary/80 disabled:opacity-40 cursor-pointer transition-colors"
+            className="px-3 py-1.5 text-sm rounded-lg bg-primary text-white hover:bg-primary/80 disabled:opacity-40 cursor-pointer"
           >
             Open in Mail
           </button>
@@ -298,14 +309,16 @@ export default function Friday() {
   const queryClient = useQueryClient();
 
   const [view, setView] = useState<"member" | "coordinator">("member");
-  const [showCreateForm, setShowCreateForm] = useState(false);
-  const [sessionName, setSessionName] = useState("");
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [confirmCancelId, setConfirmCancelId] = useState<string | null>(null);
 
   // Coordinator player management
   const [showAddPlayer, setShowAddPlayer] = useState(false);
   const [addPlayerQuery, setAddPlayerQuery] = useState("");
   const [showEmailModal, setShowEmailModal] = useState(false);
+
+  // Coordinator court booking & assignments
+  const [showAssignmentsEditor, setShowAssignmentsEditor] = useState(false);
 
   // ── Leagues ──────────────────────────────────────────────────────────────
   const { data: leaguesData, isLoading: leaguesLoading } = useQuery<{
@@ -330,9 +343,7 @@ export default function Friday() {
   }>({
     queryKey: ["fntSessions", fntLeague?.id],
     queryFn: async () => {
-      const res = await apiFetch(`/api/leagues/${fntLeague!.id}/sessions`, {
-        method: "GET",
-      });
+      const res = await apiFetch(`/api/leagues/${fntLeague!.id}/sessions`);
       return res.json();
     },
     enabled: !!fntLeague,
@@ -342,9 +353,20 @@ export default function Friday() {
   const activeSession = sessions.find(
     (s) => s.status === "ACTIVE" || s.status === "ENROLLMENT_OPEN"
   );
-  const inactiveSessions = sessions
-    .filter((s) => s.status === "INACTIVE")
-    .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+  const today = new Date().toISOString().split("T")[0];
+  const nonActiveSessions = sessions
+    .filter((s) => s.status !== "ACTIVE" && s.status !== "ENROLLMENT_OPEN")
+    .sort((a, b) => {
+      if (a.start_date && b.start_date)
+        return a.start_date.localeCompare(b.start_date);
+      return 0;
+    });
+  const upcomingSessions = nonActiveSessions.filter(
+    (s) => !s.start_date || s.start_date >= today
+  );
+  const pastSessions = nonActiveSessions
+    .filter((s) => s.start_date && s.start_date < today)
+    .reverse(); // most recent first
 
   // ── LC check ─────────────────────────────────────────────────────────────
   const isLC = !!fntLeague && fntLeague.coordinator_id === user?.id;
@@ -353,15 +375,39 @@ export default function Friday() {
   const { data: coEnrollmentsData } = useQuery<SessionEnrollmentsResponse>({
     queryKey: ["sessionEnrollments", activeSession?.id],
     queryFn: async () => {
-      const res = await apiFetch(`/api/sessions/${activeSession!.id}/enrollments`);
+      const res = await apiFetch(
+        `/api/sessions/${activeSession!.id}/enrollments`
+      );
       return res.json();
     },
     enabled: view === "coordinator" && isLC && !!activeSession,
   });
   const coEnrollments = coEnrollmentsData?.data ?? [];
 
-  // ── Coordinator: active members for add-player search ─────────────────────
-  const { data: activeMembersData } = useQuery<{ success: boolean; data: Member[] }>({
+  // ── Coordinator: session reservations ─────────────────────────────────────
+  const { data: sessionReservationsData } = useQuery<{
+    success: boolean;
+    data: Reservation[];
+  }>({
+    queryKey: ["sessionReservations", activeSession?.id],
+    queryFn: async () => {
+      const res = await apiFetch(
+        `/api/seasons/${activeSession!.id}/reservations`
+      );
+      return res.json();
+    },
+    enabled: view === "coordinator" && isLC && !!activeSession,
+  });
+  const sessionReservations = sessionReservationsData?.data ?? [];
+  const sessionCourts = [
+    ...new Set(sessionReservations.map((r) => r.court)),
+  ].sort() as number[];
+
+  // ── Active members for add-player search ──────────────────────────────────
+  const { data: activeMembersData } = useQuery<{
+    success: boolean;
+    data: Member[];
+  }>({
     queryKey: ["activeMembers"],
     queryFn: async () => {
       const res = await apiFetch("/api/members?status=ACTIVE");
@@ -372,16 +418,16 @@ export default function Friday() {
   });
 
   const enrolledIds = new Set(
-    coEnrollments.filter((e) => e.status === "ACTIVE" || e.status === "WAITLISTED").map((e) => e.member_id)
+    coEnrollments.filter((e) => e.status === "ACTIVE").map((e) => e.member_id)
   );
-
   const memberSearchResults =
     addPlayerQuery.trim().length > 0
       ? (activeMembersData?.data ?? [])
           .filter((m) => {
             if (enrolledIds.has(m.id) || m.id === user?.id) return false;
-            const fullName = `${m.first_name} ${m.last_name}`.toLowerCase();
-            return fullName.includes(addPlayerQuery.toLowerCase());
+            return `${m.first_name} ${m.last_name}`
+              .toLowerCase()
+              .includes(addPlayerQuery.toLowerCase());
           })
           .slice(0, 6)
       : [];
@@ -453,38 +499,14 @@ export default function Friday() {
     },
   });
 
-  const { mutate: createSession, isPending: createPending } = useMutation({
-    mutationFn: async (name: string) => {
-      const res = await apiFetch(`/api/leagues/${fntLeague!.id}/seasons`, {
-        method: "POST",
-        body: JSON.stringify({ name }),
-      });
-      return res.json();
-    },
-    onSuccess: (data) => {
-      if (data.success) {
-        setShowCreateForm(false);
-        setSessionName("");
-        invalidate();
-        addNotification({
-          status: NotificationStatus.SUCCESS,
-          id: "fnt-create",
-          expiresIn: 5000,
-          title: "Session created",
-        });
-      } else {
-        addNotification({
-          status: NotificationStatus.ERROR,
-          id: "fnt-create",
-          expiresIn: 5000,
-          title: data.message ?? "Could not create session",
-        });
-      }
-    },
-  });
-
   const { mutate: setStatus, isPending: statusPending } = useMutation({
-    mutationFn: async ({ sessionId, status }: { sessionId: string; status: "ACTIVE" | "INACTIVE" }) => {
+    mutationFn: async ({
+      sessionId,
+      status,
+    }: {
+      sessionId: string;
+      status: "ACTIVE" | "INACTIVE";
+    }) => {
       const res = await apiFetch(`/api/seasons/${sessionId}/status`, {
         method: "PATCH",
         body: JSON.stringify({ status }),
@@ -498,7 +520,10 @@ export default function Friday() {
           status: NotificationStatus.SUCCESS,
           id: "fnt-status",
           expiresIn: 4000,
-          title: variables.status === "ACTIVE" ? "Session activated — signups are open" : "Session deactivated",
+          title:
+            variables.status === "ACTIVE"
+              ? "Session activated — signups are open"
+              : "Session deactivated",
         });
       } else {
         addNotification({
@@ -511,15 +536,49 @@ export default function Friday() {
     },
   });
 
+  const { mutate: cancelSession, isPending: cancelPending } = useMutation({
+    mutationFn: async (seasonId: string) => {
+      const res = await apiFetch(`/api/seasons/${seasonId}/cancel`, {
+        method: "POST",
+      });
+      return res.json();
+    },
+    onSuccess: (data) => {
+      setConfirmCancelId(null);
+      if (data.success) {
+        queryClient.invalidateQueries({
+          queryKey: ["fntSessions", fntLeague?.id],
+        });
+        addNotification({
+          status: NotificationStatus.SUCCESS,
+          id: "fnt-cancel",
+          expiresIn: 5000,
+          title: "Session cancelled",
+        });
+      } else {
+        addNotification({
+          status: NotificationStatus.ERROR,
+          id: "fnt-cancel",
+          expiresIn: 5000,
+          title: data.message ?? "Could not cancel session",
+        });
+      }
+    },
+  });
+
   const { mutate: deleteSession, isPending: deletePending } = useMutation({
     mutationFn: async (seasonId: string) => {
-      const res = await apiFetch(`/api/seasons/${seasonId}`, { method: "DELETE" });
+      const res = await apiFetch(`/api/seasons/${seasonId}`, {
+        method: "DELETE",
+      });
       return res.json();
     },
     onSuccess: (data) => {
       setConfirmDeleteId(null);
       if (data.success) {
-        queryClient.invalidateQueries({ queryKey: ["fntSessions", fntLeague?.id] });
+        queryClient.invalidateQueries({
+          queryKey: ["fntSessions", fntLeague?.id],
+        });
         addNotification({
           status: NotificationStatus.SUCCESS,
           id: "fnt-delete",
@@ -539,18 +598,25 @@ export default function Friday() {
 
   const { mutate: addPlayer, isPending: addPlayerPending } = useMutation({
     mutationFn: async (memberId: string) => {
-      const res = await apiFetch(`/api/seasons/${activeSession!.id}/enrollments`, {
-        method: "POST",
-        body: JSON.stringify({ member_id: memberId }),
-      });
+      const res = await apiFetch(
+        `/api/seasons/${activeSession!.id}/enrollments`,
+        {
+          method: "POST",
+          body: JSON.stringify({ member_id: memberId }),
+        }
+      );
       return res.json();
     },
     onSuccess: (data) => {
       if (data.success) {
         setAddPlayerQuery("");
         setShowAddPlayer(false);
-        queryClient.invalidateQueries({ queryKey: ["sessionEnrollments", activeSession?.id] });
-        queryClient.invalidateQueries({ queryKey: ["fntSessions", fntLeague?.id] });
+        queryClient.invalidateQueries({
+          queryKey: ["sessionEnrollments", activeSession?.id],
+        });
+        queryClient.invalidateQueries({
+          queryKey: ["fntSessions", fntLeague?.id],
+        });
       } else {
         addNotification({
           status: NotificationStatus.ERROR,
@@ -572,8 +638,12 @@ export default function Friday() {
     },
     onSuccess: (data) => {
       if (data.success) {
-        queryClient.invalidateQueries({ queryKey: ["sessionEnrollments", activeSession?.id] });
-        queryClient.invalidateQueries({ queryKey: ["fntSessions", fntLeague?.id] });
+        queryClient.invalidateQueries({
+          queryKey: ["sessionEnrollments", activeSession?.id],
+        });
+        queryClient.invalidateQueries({
+          queryKey: ["fntSessions", fntLeague?.id],
+        });
       } else {
         addNotification({
           status: NotificationStatus.ERROR,
@@ -586,19 +656,25 @@ export default function Friday() {
   });
 
   const isMutating =
-    enrollPending || withdrawPending || createPending || statusPending ||
-    deletePending || addPlayerPending || removePlayerPending;
+    enrollPending ||
+    withdrawPending ||
+    statusPending ||
+    cancelPending ||
+    deletePending ||
+    addPlayerPending ||
+    removePlayerPending;
   const isLoading = leaguesLoading || sessionsLoading;
-
   const myStatus = activeSession?.my_enrollment ?? null;
 
-  // Court booking URL — land on league mode with all enrolled player IDs
-  const bookCourtsUrl = activeSession
-    ? `/member/reserve?mode=league&players=${coEnrollments
-        .filter((e) => e.status === "ACTIVE")
-        .map((e) => e.member_id)
-        .join(",")}`
-    : "/member/reserve?mode=league";
+  const formatDate = (d: string | null) =>
+    d
+      ? new Date(d).toLocaleDateString("en-US", {
+          weekday: "long",
+          month: "long",
+          day: "numeric",
+          timeZone: "UTC",
+        })
+      : null;
 
   return (
     <ProtectedPage
@@ -616,101 +692,36 @@ export default function Friday() {
         {/* Tab toggle (LC only) */}
         {isLC && (
           <div className="flex gap-1 bg-gray-100 p-1 rounded-lg w-fit">
-            <button
-              onClick={() => setView("member")}
-              className={`px-4 py-1.5 text-sm rounded-md transition-colors cursor-pointer ${
-                view === "member"
-                  ? "bg-white text-gray-800 font-medium shadow-sm"
-                  : "text-gray-500 hover:text-gray-700"
-              }`}
-            >
-              Member
-            </button>
-            <button
-              onClick={() => setView("coordinator")}
-              className={`px-4 py-1.5 text-sm rounded-md transition-colors cursor-pointer ${
-                view === "coordinator"
-                  ? "bg-white text-gray-800 font-medium shadow-sm"
-                  : "text-gray-500 hover:text-gray-700"
-              }`}
-            >
-              Coordinator
-            </button>
+            {(["member", "coordinator"] as const).map((v) => (
+              <button
+                key={v}
+                onClick={() => setView(v)}
+                className={`px-4 py-1.5 text-sm rounded-md transition-colors cursor-pointer capitalize ${
+                  view === v
+                    ? "bg-white text-gray-800 font-medium shadow-sm"
+                    : "text-gray-500 hover:text-gray-700"
+                }`}
+              >
+                {v}
+              </button>
+            ))}
           </div>
         )}
 
         {isLoading ? (
           <p className="text-sm text-gray-500">Loading...</p>
         ) : !fntLeague ? (
-          <p className="text-sm text-gray-500">Friday Night Tennis league not found.</p>
+          <p className="text-sm text-gray-500">
+            Friday Night Tennis league not found.
+          </p>
         ) : view === "coordinator" && isLC ? (
           /* ── Coordinator view ─────────────────────────────────────────── */
           <div className="flex flex-col gap-4">
-            <div className="flex items-center justify-between">
-              <p className="text-sm text-gray-500">
-                {sessions.length} session{sessions.length !== 1 ? "s" : ""}
-              </p>
-              {!showCreateForm && !activeSession && (
-                <button
-                  onClick={() => {
-                    const friday = new Date();
-                    const day = friday.getDay();
-                    friday.setDate(friday.getDate() + ((5 - day + 7) % 7 || 7));
-                    setSessionName(
-                      `Week of ${friday.toLocaleDateString("en-US", {
-                        month: "long",
-                        day: "numeric",
-                        timeZone: "America/New_York",
-                      })}`
-                    );
-                    setShowCreateForm(true);
-                  }}
-                  className="px-4 py-2 text-sm rounded-lg bg-primary text-white hover:bg-primary/80 cursor-pointer"
-                >
-                  + New session
-                </button>
-              )}
-            </div>
+            <p className="text-sm text-gray-500">
+              {sessions.length} session{sessions.length !== 1 ? "s" : ""}
+            </p>
 
-            {showCreateForm && (
-              <div className="bg-white rounded-xl border border-gray-200 p-5">
-                <p className="font-medium text-gray-800 mb-4">New session</p>
-                <div className="flex flex-col gap-3 max-w-sm">
-                  <div className="flex flex-col gap-1">
-                    <label className="text-sm text-gray-600">Session name</label>
-                    <input
-                      autoFocus
-                      type="text"
-                      value={sessionName}
-                      onChange={(e) => setSessionName(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter" && sessionName.trim()) {
-                          createSession(sessionName.trim());
-                        }
-                      }}
-                      className="px-3 py-2 rounded-lg border border-gray-300 text-sm focus:outline-1 focus:outline-primary"
-                    />
-                  </div>
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => sessionName.trim() && createSession(sessionName.trim())}
-                      disabled={!sessionName.trim() || isMutating}
-                      className="px-5 py-2 text-sm rounded-lg bg-primary text-white hover:bg-primary/80 disabled:opacity-40 cursor-pointer"
-                    >
-                      {createPending ? "Creating..." : "Create"}
-                    </button>
-                    <button
-                      onClick={() => setShowCreateForm(false)}
-                      className="px-4 py-2 text-sm rounded-lg border border-gray-300 text-gray-600 hover:bg-gray-50 cursor-pointer"
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Active session — full management card */}
+            {/* ── Active session ── */}
             {activeSession && (
               <div className="bg-white rounded-xl border border-primary/30">
                 {/* Header */}
@@ -718,41 +729,47 @@ export default function Friday() {
                   <div className="flex items-start justify-between gap-4">
                     <div>
                       <div className="flex items-center gap-2 mb-0.5">
-                        <p className="font-semibold text-gray-800">{activeSession.name}</p>
+                        <p className="font-semibold text-gray-800">
+                          {activeSession.name}
+                        </p>
                         <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-green-100 text-green-700">
                           Active
                         </span>
                       </div>
-                      <p className="text-xs text-gray-400">
-                        {activeSession.enrolled_count} enrolled
-                        {activeSession.waitlisted_count > 0
-                          ? ` · ${activeSession.waitlisted_count} waitlisted`
-                          : ""}
-                      </p>
+                      {activeSession.start_date && (
+                        <p className="text-xs text-gray-400">
+                          {formatDate(activeSession.start_date)}
+                        </p>
+                      )}
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
-                      {confirmDeleteId === activeSession.id ? (
+                      {confirmCancelId === activeSession.id ? (
                         <>
-                          <span className="text-xs text-gray-500">Delete session?</span>
+                          <span className="text-xs text-gray-500">
+                            Cancel session?
+                          </span>
                           <button
-                            onClick={() => deleteSession(activeSession.id)}
+                            onClick={() => cancelSession(activeSession.id)}
                             disabled={isMutating}
                             className="px-3 py-1.5 text-sm rounded-lg bg-red-600 text-white hover:bg-red-700 disabled:opacity-40 cursor-pointer"
                           >
-                            {deletePending ? "Deleting..." : "Yes, delete"}
+                            {cancelPending ? "..." : "Yes, cancel"}
                           </button>
                           <button
-                            onClick={() => setConfirmDeleteId(null)}
+                            onClick={() => setConfirmCancelId(null)}
                             className="px-3 py-1.5 text-sm rounded-lg border border-gray-300 text-gray-600 hover:bg-gray-50 cursor-pointer"
                           >
-                            Cancel
+                            No
                           </button>
                         </>
                       ) : (
                         <>
                           <button
                             onClick={() =>
-                              setStatus({ sessionId: activeSession.id, status: "INACTIVE" })
+                              setStatus({
+                                sessionId: activeSession.id,
+                                status: "INACTIVE",
+                              })
                             }
                             disabled={isMutating}
                             className="px-4 py-1.5 text-sm rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 disabled:opacity-40 cursor-pointer font-medium transition-colors"
@@ -760,11 +777,11 @@ export default function Friday() {
                             {statusPending ? "..." : "Deactivate"}
                           </button>
                           <button
-                            onClick={() => setConfirmDeleteId(activeSession.id)}
+                            onClick={() => setConfirmCancelId(activeSession.id)}
                             disabled={isMutating}
                             className="px-4 py-1.5 text-sm rounded-lg border border-gray-200 text-gray-500 hover:border-red-300 hover:text-red-500 disabled:opacity-40 cursor-pointer transition-colors"
                           >
-                            Delete
+                            Cancel session
                           </button>
                         </>
                       )}
@@ -772,39 +789,72 @@ export default function Friday() {
                   </div>
                 </div>
 
-                {/* Player list */}
-                <div className="px-5 py-4">
-                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">
-                    Players ({coEnrollments.filter((e) => e.status === "ACTIVE").length})
-                  </p>
+                {/* Courts */}
+                {sessionReservations.length > 0 && (
+                  <div className="px-5 py-4 border-b border-gray-100">
+                    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
+                      Courts
+                    </p>
+                    {(() => {
+                      const courts = [...new Set(sessionReservations.map((r) => r.court))].sort();
+                      const slots = [...new Set(sessionReservations.map((r) => r.slot))].sort((a, b) => a - b);
+                      const firstSlot = slots[0];
+                      const lastSlot = slots[slots.length - 1];
+                      return (
+                        <ul className="list-disc list-inside flex flex-col gap-0.5">
+                          {courts.map((court) => {
+                            const start = getSlotLabel(firstSlot, court).split(" – ")[0];
+                            const end = getSlotLabel(lastSlot, court).split(" – ")[1];
+                            return (
+                              <li key={court} className="text-sm text-gray-600">
+                                Court {court}: {start} – {end}
+                              </li>
+                            );
+                          })}
+                        </ul>
+                      );
+                    })()}
+                  </div>
+                )}
 
-                  {coEnrollments.filter((e) => e.status === "ACTIVE").length > 0 ? (
+                {/* Players */}
+                <div className="px-5 py-4 border-b border-gray-100">
+                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">
+                    Players (
+                    {coEnrollments.filter((e) => e.status === "ACTIVE").length})
+                  </p>
+                  {coEnrollments.filter((e) => e.status === "ACTIVE").length >
+                  0 ? (
                     <div className="flex flex-col gap-1 mb-3">
                       {coEnrollments
                         .filter((e) => e.status === "ACTIVE")
                         .map((e, i) => (
                           <div
                             key={e.id}
-                            className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm group ${
+                            className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm ${
                               i % 2 === 0 ? "bg-white" : "bg-gray-50"
                             }`}
                           >
-                            <span className="text-gray-400 w-5 text-center text-xs">{i + 1}</span>
+                            <span className="text-gray-400 w-5 text-center text-xs">
+                              {i + 1}
+                            </span>
                             <span className="font-medium text-gray-800">
                               {e.members?.first_name} {e.members?.last_name}
                             </span>
                             <span className="text-gray-400 text-xs ml-auto">
-                              {new Date(e.enrolled_at).toLocaleDateString("en-US", {
-                                month: "short",
-                                day: "numeric",
-                                timeZone: "America/New_York",
-                              })}
+                              {new Date(e.enrolled_at).toLocaleDateString(
+                                "en-US",
+                                {
+                                  month: "short",
+                                  day: "numeric",
+                                  timeZone: "America/New_York",
+                                }
+                              )}
                             </span>
                             <button
                               onClick={() => removePlayer(e.member_id)}
                               disabled={isMutating}
                               className="text-gray-300 hover:text-red-400 disabled:opacity-40 cursor-pointer transition-colors text-xs ml-1"
-                              title="Remove player"
                             >
                               ✕
                             </button>
@@ -812,10 +862,10 @@ export default function Friday() {
                         ))}
                     </div>
                   ) : (
-                    <p className="text-sm text-gray-400 mb-3">No players yet.</p>
+                    <p className="text-sm text-gray-400 mb-3">
+                      No players yet.
+                    </p>
                   )}
-
-                  {/* Add player */}
                   {showAddPlayer ? (
                     <div className="relative mt-1">
                       <input
@@ -860,93 +910,218 @@ export default function Friday() {
                   )}
                 </div>
 
-                {/* Actions bar */}
-                <div className="px-5 py-3 border-t border-gray-100 flex items-center gap-2">
+                {/* Assignments */}
+                <div className="px-5 py-4 border-b border-gray-100">
+                  <div className="flex items-center justify-between mb-3">
+                    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                      Assignments
+                    </p>
+                    {!showAssignmentsEditor && (
+                      <button
+                        onClick={() => setShowAssignmentsEditor(true)}
+                        className="text-xs text-primary hover:text-primary/70 cursor-pointer font-medium"
+                      >
+                        Edit
+                      </button>
+                    )}
+                  </div>
+                  {showAssignmentsEditor ? (
+                    <AssignmentsEditor
+                      sessionId={activeSession.id}
+                      enrollments={coEnrollments}
+                      sessionCourts={sessionCourts}
+                      onClose={() => setShowAssignmentsEditor(false)}
+                    />
+                  ) : (
+                    <AssignmentsView
+                      sessionId={activeSession.id}
+                      currentUserId={user?.id ?? ""}
+                    />
+                  )}
+                </div>
+
+                {/* Actions */}
+                <div className="px-5 py-3 flex items-center gap-2">
                   <button
                     disabled
-                    className="px-4 py-2 text-sm rounded-lg border border-gray-200 text-gray-400 opacity-40 cursor-not-allowed transition-colors"
+                    className="px-4 py-2 text-sm rounded-lg border border-gray-200 text-gray-400 opacity-40 cursor-not-allowed"
                   >
                     Email players
                   </button>
-                  <a
-                    href={bookCourtsUrl}
-                    className="px-4 py-2 text-sm rounded-lg bg-primary text-white hover:bg-primary/80 cursor-pointer transition-colors"
-                  >
-                    Book courts →
-                  </a>
                 </div>
               </div>
             )}
 
-            {/* Inactive sessions */}
-            {inactiveSessions.length > 0 && (
-              <div className="flex flex-col gap-3">
-                {!activeSession && sessions.length === 0 && (
-                  <p className="text-sm text-gray-400">No sessions yet.</p>
-                )}
-                {inactiveSessions.map((s) => {
-                  const isConfirmingDelete = confirmDeleteId === s.id;
-                  return (
-                    <div
-                      key={s.id}
-                      className="bg-white rounded-xl border border-gray-200 px-5 py-4"
-                    >
-                      <div className="flex items-center justify-between gap-4">
+            {/* ── Upcoming / Previous sessions ── */}
+            {[
+              { label: "Upcoming sessions", list: upcomingSessions },
+              { label: "Previous sessions", list: pastSessions },
+            ].map(({ label, list }) =>
+              list.length > 0 ? (
+                <div key={label} className="flex flex-col gap-2">
+                  <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mt-2">
+                    {label}
+                  </p>
+                  {list.map((s) => {
+                    const isCancelled = s.status === "CANCELLED";
+                    const isConfirmingCancel = confirmCancelId === s.id;
+                    const isConfirmingDelete = confirmDeleteId === s.id;
+                    return isCancelled ? (
+                      <div
+                        key={s.id}
+                        className="bg-white rounded-xl border border-gray-100 px-5 py-3 flex items-center justify-between opacity-60"
+                      >
                         <div className="flex items-center gap-2">
-                          <p className="font-medium text-gray-700">{s.name}</p>
-                          <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-gray-100 text-gray-500">
-                            Inactive
+                          <p className="text-sm text-gray-500">{s.name}</p>
+                          <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-red-50 text-red-400">
+                            Cancelled
                           </span>
-                          <span className="text-xs text-gray-400">{s.enrolled_count} players</span>
-                        </div>
-                        <div className="flex items-center gap-2 shrink-0">
-                          {isConfirmingDelete ? (
-                            <>
-                              <span className="text-xs text-gray-500">Delete?</span>
-                              <button
-                                onClick={() => deleteSession(s.id)}
-                                disabled={isMutating}
-                                className="px-3 py-1.5 text-sm rounded-lg bg-red-600 text-white hover:bg-red-700 disabled:opacity-40 cursor-pointer"
-                              >
-                                {deletePending ? "..." : "Yes"}
-                              </button>
-                              <button
-                                onClick={() => setConfirmDeleteId(null)}
-                                className="px-3 py-1.5 text-sm rounded-lg border border-gray-300 text-gray-600 hover:bg-gray-50 cursor-pointer"
-                              >
-                                Cancel
-                              </button>
-                            </>
-                          ) : (
-                            <>
-                              <button
-                                onClick={() =>
-                                  setStatus({ sessionId: s.id, status: "ACTIVE" })
+                          {s.start_date && (
+                            <span className="text-xs text-gray-400">
+                              {new Date(s.start_date).toLocaleDateString(
+                                "en-US",
+                                {
+                                  month: "short",
+                                  day: "numeric",
+                                  timeZone: "UTC",
                                 }
-                                disabled={isMutating || !!activeSession}
-                                className="px-4 py-1.5 text-sm rounded-lg bg-primary text-white hover:bg-primary/80 disabled:opacity-40 cursor-pointer font-medium transition-colors"
-                                title={activeSession ? "Deactivate current session first" : undefined}
-                              >
-                                {statusPending ? "..." : "Activate"}
-                              </button>
-                              <button
-                                onClick={() => setConfirmDeleteId(s.id)}
-                                disabled={isMutating}
-                                className="px-4 py-1.5 text-sm rounded-lg border border-gray-200 text-gray-500 hover:border-red-300 hover:text-red-500 disabled:opacity-40 cursor-pointer transition-colors"
-                              >
-                                Delete
-                              </button>
-                            </>
+                              )}
+                            </span>
                           )}
                         </div>
+                        {confirmDeleteId === s.id ? (
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs text-gray-500">
+                              Delete?
+                            </span>
+                            <button
+                              onClick={() => deleteSession(s.id)}
+                              disabled={isMutating}
+                              className="px-3 py-1 text-xs rounded-lg bg-red-600 text-white cursor-pointer"
+                            >
+                              {deletePending ? "..." : "Yes"}
+                            </button>
+                            <button
+                              onClick={() => setConfirmDeleteId(null)}
+                              className="px-3 py-1 text-xs rounded-lg border border-gray-300 text-gray-600 cursor-pointer"
+                            >
+                              No
+                            </button>
+                          </div>
+                        ) : (
+                          <button
+                            onClick={() => setConfirmDeleteId(s.id)}
+                            className="text-xs text-gray-400 hover:text-red-500 cursor-pointer transition-colors"
+                          >
+                            Delete
+                          </button>
+                        )}
                       </div>
-                    </div>
-                  );
-                })}
-              </div>
+                    ) : (
+                      <div
+                        key={s.id}
+                        className="bg-white rounded-xl border border-gray-200 px-5 py-4"
+                      >
+                        <div className="flex items-center justify-between gap-4">
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <p className="font-medium text-gray-700">
+                                {s.name}
+                              </p>
+                              <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-gray-100 text-gray-500">
+                                Inactive
+                              </span>
+                            </div>
+                            {s.start_date && (
+                              <p className="text-xs text-gray-400 mt-0.5">
+                                {formatDate(s.start_date)}
+                              </p>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-2 shrink-0">
+                            {isConfirmingCancel ? (
+                              <>
+                                <span className="text-xs text-gray-500">
+                                  Cancel?
+                                </span>
+                                <button
+                                  onClick={() => cancelSession(s.id)}
+                                  disabled={isMutating}
+                                  className="px-3 py-1.5 text-sm rounded-lg bg-red-600 text-white hover:bg-red-700 disabled:opacity-40 cursor-pointer"
+                                >
+                                  {cancelPending ? "..." : "Yes"}
+                                </button>
+                                <button
+                                  onClick={() => setConfirmCancelId(null)}
+                                  className="px-3 py-1.5 text-sm rounded-lg border border-gray-300 text-gray-600 cursor-pointer"
+                                >
+                                  No
+                                </button>
+                              </>
+                            ) : isConfirmingDelete ? (
+                              <>
+                                <span className="text-xs text-gray-500">
+                                  Delete?
+                                </span>
+                                <button
+                                  onClick={() => deleteSession(s.id)}
+                                  disabled={isMutating}
+                                  className="px-3 py-1.5 text-sm rounded-lg bg-red-600 text-white hover:bg-red-700 disabled:opacity-40 cursor-pointer"
+                                >
+                                  {deletePending ? "..." : "Yes"}
+                                </button>
+                                <button
+                                  onClick={() => setConfirmDeleteId(null)}
+                                  className="px-3 py-1.5 text-sm rounded-lg border border-gray-300 text-gray-600 cursor-pointer"
+                                >
+                                  No
+                                </button>
+                              </>
+                            ) : (
+                              <>
+                                <button
+                                  onClick={() =>
+                                    setStatus({
+                                      sessionId: s.id,
+                                      status: "ACTIVE",
+                                    })
+                                  }
+                                  disabled={isMutating || !!activeSession}
+                                  title={
+                                    activeSession
+                                      ? "Deactivate current session first"
+                                      : undefined
+                                  }
+                                  className="px-4 py-1.5 text-sm rounded-lg bg-primary text-white hover:bg-primary/80 disabled:opacity-40 cursor-pointer font-medium transition-colors"
+                                >
+                                  {statusPending ? "..." : "Activate"}
+                                </button>
+                                <button
+                                  onClick={() => setConfirmCancelId(s.id)}
+                                  disabled={isMutating}
+                                  className="px-4 py-1.5 text-sm rounded-lg border border-gray-200 text-gray-500 hover:border-amber-300 hover:text-amber-600 disabled:opacity-40 cursor-pointer transition-colors"
+                                >
+                                  Cancel
+                                </button>
+                                <button
+                                  onClick={() => setConfirmDeleteId(s.id)}
+                                  disabled={isMutating}
+                                  className="px-4 py-1.5 text-sm rounded-lg border border-gray-200 text-gray-500 hover:border-red-300 hover:text-red-500 disabled:opacity-40 cursor-pointer transition-colors"
+                                >
+                                  Delete
+                                </button>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : null
             )}
 
-            {sessions.length === 0 && !showCreateForm && (
+            {sessions.length === 0 && (
               <p className="text-sm text-gray-400">No sessions yet.</p>
             )}
           </div>
@@ -967,15 +1142,9 @@ export default function Friday() {
                   </div>
                   {activeSession.start_date && (
                     <p className="text-sm text-gray-500 mt-1">
-                      {new Date(activeSession.start_date).toLocaleDateString("en-US", {
-                        weekday: "long",
-                        month: "long",
-                        day: "numeric",
-                        timeZone: "America/New_York",
-                      })}
+                      {formatDate(activeSession.start_date)}
                     </p>
                   )}
-
                   <div className="mt-4 flex gap-2">
                     {myStatus === null && (
                       <button
@@ -998,8 +1167,18 @@ export default function Friday() {
                   </div>
                 </div>
 
-                <div className="px-6 py-5">
+                <div className="px-6 py-5 border-b border-gray-100">
                   <PlayerList
+                    sessionId={activeSession.id}
+                    currentUserId={user?.id ?? ""}
+                  />
+                </div>
+
+                <div className="px-6 py-5">
+                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">
+                    Assignments
+                  </p>
+                  <AssignmentsView
                     sessionId={activeSession.id}
                     currentUserId={user?.id ?? ""}
                   />
@@ -1009,24 +1188,30 @@ export default function Friday() {
               <div className="bg-white rounded-xl border border-gray-200 px-6 py-10 flex flex-col items-center gap-2 text-center">
                 <p className="text-gray-500 font-medium">No session open yet</p>
                 <p className="text-sm text-gray-400">
-                  Check back Monday — signups typically open at the start of the week.
+                  Check back Monday — signups typically open at the start of the
+                  week.
                 </p>
               </div>
             )}
 
-            {inactiveSessions.length > 0 && (
-              <div className="flex flex-col gap-3">
-                <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">
-                  Previous sessions
-                </p>
-                {inactiveSessions.map((s) => (
-                  <ClosedSession
-                    key={s.id}
-                    session={s}
-                    currentUserId={user?.id ?? ""}
-                  />
-                ))}
-              </div>
+            {[
+              { label: "Upcoming sessions", list: upcomingSessions },
+              { label: "Previous sessions", list: pastSessions },
+            ].map(({ label, list }) =>
+              list.length > 0 ? (
+                <div key={label} className="flex flex-col gap-3">
+                  <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">
+                    {label}
+                  </p>
+                  {list.map((s) => (
+                    <ClosedSession
+                      key={s.id}
+                      session={s}
+                      currentUserId={user?.id ?? ""}
+                    />
+                  ))}
+                </div>
+              ) : null
             )}
           </div>
         )}

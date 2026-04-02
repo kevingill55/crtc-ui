@@ -29,7 +29,6 @@ export enum ReservationType {
 export type Member = {
   created_at: string;
   id: string;
-  rating: number;
   first_name: string;
   last_name: string;
   address: string;
@@ -95,11 +94,19 @@ export type LeagueSeason = {
   id: string;
   league_id: string;
   name: string;
-  status: "DRAFT" | "INACTIVE" | "ENROLLMENT_OPEN" | "ACTIVE" | "COMPLETED";
+  status: "DRAFT" | "INACTIVE" | "ENROLLMENT_OPEN" | "ACTIVE" | "COMPLETED" | "CANCELLED";
   start_date: string | null;
   end_date: string | null;
   max_players: number | null;
   created_at: string;
+};
+
+export type FntRoundAssignment = {
+  id: string;
+  season_id: string;
+  round_number: number;
+  court: number;
+  player_ids: string[];
 };
 
 export type LeagueEnrollment = {

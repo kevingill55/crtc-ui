@@ -42,7 +42,6 @@ export default function CreateMember() {
   const [passwordConfirmation, setPasswordConfirmation] = useState("");
   const [phone, setPhone] = useState("");
   const [address, setAddress] = useState("");
-  const [rating, setRating] = useState("");
   const [plan, setPlan] = useState<MemberPlanType>(MemberPlanType.ADULT);
   const [status, setStatus] = useState<MemberStatus>(MemberStatus.ACTIVE);
   const [role, setRole] = useState<MemberRole>(MemberRole.MEMBER);
@@ -59,7 +58,6 @@ export default function CreateMember() {
           password_confirmation: passwordConfirmation,
           phone_number: phone,
           address,
-          rating: parseFloat(rating),
           plan,
           status,
           role,
@@ -100,8 +98,7 @@ export default function CreateMember() {
     password &&
     !passwordMismatch &&
     phone &&
-    address &&
-    rating;
+    address;
 
   return (
     <ProtectedPage title="Create member" subtitle="Create a new CRTC member">
@@ -175,21 +172,6 @@ export default function CreateMember() {
             <label className={LABEL_CLS}>Phone number</label>
             <PhoneInput id="cm-phone" phone={phone} setPhone={setPhone} />
           </div>
-          <div className={FIELD_CLS}>
-            <label className={LABEL_CLS}>Rating</label>
-            <input
-              id="cm-rating"
-              type="number"
-              min={1}
-              max={7}
-              step={0.5}
-              value={rating}
-              onChange={(e) => setRating(e.target.value)}
-              placeholder="e.g. 3.5"
-              className="px-4 py-2 rounded-lg border border-gray-300 focus:outline-1 focus:outline-primary hover:border-gray-500"
-            />
-          </div>
-
           <div className={`${FIELD_CLS} col-span-2`}>
             <label className={LABEL_CLS}>Address</label>
             <FormInput

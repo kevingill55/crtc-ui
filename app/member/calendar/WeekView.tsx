@@ -3,23 +3,15 @@
 import { useMemo } from "react";
 import { useQueries } from "@tanstack/react-query";
 import { apiFetch } from "@/app/clients/api";
-import { isWateringSlot, toEasternISO } from "@/app/utils";
-import { GetSlotsApiResponse } from "@/app/types";
+import { isWateringSlot, toEasternISO, getSlotOverviewLabel } from "@/app/utils";
+import { GetSlotsApiResponse, Slot } from "@/app/types";
 
 const COURTS = [1, 2, 3, 4];
 const DAY_NAMES = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-const TOTAL_BOOKABLE = 32; // 36 court-slots minus 4 watering slots
+const SLOT_INDICES = [1, 2, 3, 4, 5, 6, 7, 8, 9];
 
-function getAvailable(slots: GetSlotsApiResponse["slots"]): number {
-  let booked = 0;
-  for (const slot of slots) {
-    for (const court of COURTS) {
-      if (!isWateringSlot(slot.slotIndex, court) && slot.reservationsByCourt[court]) {
-        booked++;
-      }
-    }
-  }
-  return TOTAL_BOOKABLE - booked;
+function slotStartTime(slotIndex: number): string {
+  return getSlotOverviewLabel(slotIndex).split(" – ")[0];
 }
 
 export default function WeekView({
@@ -52,86 +44,98 @@ export default function WeekView({
     })),
   });
 
-  return (
-    <div className="grid grid-cols-7 gap-3">
-      {weekDates.map((d, i) => {
-        const iso = weekDateIsos[i];
-        const isToday = iso === today;
-        const isPast = iso < today;
-        const result = results[i];
-        const slots = result.data?.slots;
-        const available = slots ? getAvailable(slots) : null;
-        const fillPct =
-          available !== null
-            ? ((TOTAL_BOOKABLE - available) / TOTAL_BOOKABLE) * 100
-            : 0;
+  const slotMaps = results.map((result) => {
+    const map: Record<number, Slot> = {};
+    if (result.data?.slots) {
+      for (const slot of result.data.slots) map[slot.slotIndex] = slot;
+    }
+    return map;
+  });
 
-        return (
-          <div
-            key={iso}
-            onClick={() => onSelectDate(d)}
-            className={`bg-white rounded-xl border cursor-pointer hover:shadow-md transition-shadow p-4 flex flex-col gap-3 ${
-              isToday
-                ? "border-primary ring-2 ring-primary/20"
-                : "border-gray-200 hover:border-gray-300"
-            } ${isPast ? "opacity-50" : ""}`}
-          >
-            {/* Day header */}
-            <div className="text-center">
-              <p
-                className={`text-xs font-semibold uppercase tracking-wide ${
-                  isToday ? "text-primary" : "text-gray-400"
-                }`}
-              >
+  const colTemplate = "4rem repeat(7, 1fr)";
+
+  return (
+    <div className="h-full flex flex-col bg-white rounded-xl border border-gray-200 overflow-hidden">
+      {/* Day headers */}
+      <div className="grid border-b border-gray-200 shrink-0" style={{ gridTemplateColumns: colTemplate }}>
+        <div className="bg-primary" />
+        {weekDates.map((d, i) => {
+          const iso = weekDateIsos[i];
+          const isToday = iso === today;
+          return (
+            <div
+              key={iso}
+              onClick={() => onSelectDate(d)}
+              className={`text-center py-3 px-2 border-l border-white/20 cursor-pointer transition-colors ${
+                isToday ? "bg-primary/80" : "bg-primary hover:bg-primary/90"
+              }`}
+            >
+              <p className="text-xs font-semibold uppercase tracking-wide text-white/70">
                 {DAY_NAMES[i]}
               </p>
-              <p
-                className={`text-2xl font-bold leading-tight ${
-                  isToday ? "text-primary" : "text-gray-800"
-                }`}
-              >
+              <p className={`text-xl font-bold text-white ${isToday ? "underline underline-offset-2" : ""}`}>
                 {d.getDate()}
               </p>
             </div>
+          );
+        })}
+      </div>
 
-            {/* Availability count */}
-            <div className="text-center min-h-[2rem] flex items-center justify-center">
-              {result.isLoading ? (
-                <div className="h-5 w-16 bg-gray-100 rounded animate-pulse" />
-              ) : available === null ? null : available === 0 ? (
-                <p className="text-sm font-semibold text-red-400">Full</p>
-              ) : (
-                <p className="leading-none">
-                  <span
-                    className={`text-xl font-bold ${
-                      available <= 8 ? "text-amber-500" : "text-primary"
-                    }`}
-                  >
-                    {available}
-                  </span>
-                  <span className="text-xs text-gray-400 ml-1">open</span>
-                </p>
-              )}
+      {/* Slot rows */}
+      <div className="flex-1 flex flex-col min-h-0">
+        {SLOT_INDICES.map((slotIdx) => (
+          <div
+            key={slotIdx}
+            className="flex-1 grid border-b border-gray-100 last:border-b-0 min-h-0"
+            style={{ gridTemplateColumns: colTemplate }}
+          >
+            {/* Time label */}
+            <div className="flex items-center justify-end pr-3 text-xs text-gray-400 bg-gray-50 border-r border-gray-200 shrink-0">
+              {slotStartTime(slotIdx)}
             </div>
 
-            {/* Fill bar */}
-            <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
-              {!result.isLoading && available !== null && (
+            {/* Day cells */}
+            {weekDates.map((d, i) => {
+              const iso = weekDateIsos[i];
+              const isPast = iso < today;
+              const isToday = iso === today;
+              const result = results[i];
+              const slot = slotMaps[i][slotIdx];
+
+              return (
                 <div
-                  className={`h-full rounded-full transition-all ${
-                    available === 0
-                      ? "bg-red-400"
-                      : available <= 8
-                      ? "bg-amber-400"
-                      : "bg-primary/50"
-                  }`}
-                  style={{ width: `${fillPct}%` }}
-                />
-              )}
-            </div>
+                  key={iso}
+                  onClick={() => onSelectDate(d)}
+                  className={`border-l border-gray-100 flex items-center justify-center cursor-pointer transition-colors hover:bg-gray-50 ${
+                    isToday ? "bg-primary/5" : ""
+                  } ${isPast ? "opacity-40" : ""}`}
+                >
+                  <div className="flex gap-1">
+                    {COURTS.map((court) => {
+                      const isWatering = isWateringSlot(slotIdx, court);
+                      const isBooked = slot ? !!slot.reservationsByCourt[court] : false;
+                      return (
+                        <span
+                          key={court}
+                          className={`w-3 h-3 rounded-full ${
+                            result.isLoading
+                              ? "bg-gray-100 animate-pulse"
+                              : isWatering
+                              ? "bg-sky-200"
+                              : isBooked
+                              ? "bg-gray-300"
+                              : "bg-lime-400"
+                          }`}
+                        />
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })}
           </div>
-        );
-      })}
+        ))}
+      </div>
     </div>
   );
 }

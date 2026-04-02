@@ -5,14 +5,13 @@ import { useMemo, useState } from "react";
 import { apiFetch } from "@/app/clients/api";
 import ProtectedPage from "@/app/components/ProtectedPage";
 import { toEasternISO } from "@/app/utils";
-import { DayAvailability, GetSlotsApiResponse } from "@/app/types";
+import { GetSlotsApiResponse } from "@/app/types";
 import { faCaretLeft, faCaretRight } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import DayView from "./DayView";
 import WeekView from "./WeekView";
-import MonthView from "./MonthView";
 
-type CalendarView = "day" | "week" | "month";
+type CalendarView = "day" | "week";
 
 export default function Calendar() {
   const [view, setView] = useState<CalendarView>("day");
@@ -22,7 +21,6 @@ export default function Calendar() {
     const d = new Date(currentDate);
     if (view === "day") d.setDate(d.getDate() - 1);
     if (view === "week") d.setDate(d.getDate() - 7);
-    if (view === "month") d.setMonth(d.getMonth() - 1);
     setCurrentDate(d);
   };
 
@@ -30,7 +28,6 @@ export default function Calendar() {
     const d = new Date(currentDate);
     if (view === "day") d.setDate(d.getDate() + 1);
     if (view === "week") d.setDate(d.getDate() + 7);
-    if (view === "month") d.setMonth(d.getMonth() + 1);
     setCurrentDate(d);
   };
 
@@ -43,30 +40,23 @@ export default function Calendar() {
         timeZone: "America/New_York",
       });
     }
-    if (view === "week") {
-      const weekStart = new Date(currentDate);
-      weekStart.setDate(
-        currentDate.getDate() - ((currentDate.getDay() + 6) % 7)
-      );
-      const weekEnd = new Date(weekStart);
-      weekEnd.setDate(weekStart.getDate() + 6);
-      const startLabel = weekStart.toLocaleDateString("en-US", {
-        month: "short",
-        day: "numeric",
-        timeZone: "America/New_York",
-      });
-      const endLabel = weekEnd.toLocaleDateString("en-US", {
-        month: "short",
-        day: "numeric",
-        timeZone: "America/New_York",
-      });
-      return `${startLabel} – ${endLabel}`;
-    }
-    return currentDate.toLocaleDateString("en-US", {
-      month: "long",
-      year: "numeric",
+    const weekStart = new Date(currentDate);
+    weekStart.setDate(
+      currentDate.getDate() - ((currentDate.getDay() + 6) % 7)
+    );
+    const weekEnd = new Date(weekStart);
+    weekEnd.setDate(weekStart.getDate() + 6);
+    const startLabel = weekStart.toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
       timeZone: "America/New_York",
     });
+    const endLabel = weekEnd.toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      timeZone: "America/New_York",
+    });
+    return `${startLabel} – ${endLabel}`;
   }, [view, currentDate]);
 
   const weekday =
@@ -77,7 +67,6 @@ export default function Calendar() {
         })
       : null;
 
-  // Day view data
   const dateIso = toEasternISO(currentDate);
   const { data: dayData } = useQuery<GetSlotsApiResponse>({
     queryKey: ["getSlotsByDay", dateIso],
@@ -88,41 +77,6 @@ export default function Calendar() {
       return res.json();
     },
     enabled: view === "day",
-  });
-
-  // Month view: compute full visible grid range
-  const { monthStart, monthEnd } = useMemo(() => {
-    const year = currentDate.getFullYear();
-    const month = currentDate.getMonth();
-    const firstOfMonth = new Date(year, month, 1);
-    const lastOfMonth = new Date(year, month + 1, 0);
-
-    const gridStart = new Date(firstOfMonth);
-    gridStart.setDate(
-      firstOfMonth.getDate() - ((firstOfMonth.getDay() + 6) % 7)
-    );
-    const gridEnd = new Date(lastOfMonth);
-    gridEnd.setDate(lastOfMonth.getDate() + ((7 - lastOfMonth.getDay()) % 7));
-
-    return {
-      monthStart: toEasternISO(gridStart),
-      monthEnd: toEasternISO(gridEnd),
-    };
-  }, [currentDate]);
-
-  const { data: availabilityData } = useQuery<{
-    success: boolean;
-    data: DayAvailability[];
-  }>({
-    queryKey: ["availability", monthStart, monthEnd],
-    queryFn: async () => {
-      const res = await apiFetch(
-        `/api/reservations/availability?start=${monthStart}&end=${monthEnd}`,
-        { method: "GET" }
-      );
-      return res.json();
-    },
-    enabled: view === "month",
   });
 
   return (
@@ -164,7 +118,7 @@ export default function Calendar() {
 
           {/* Right: view toggle */}
           <div className="flex rounded-lg border border-gray-200 bg-white p-1 gap-1">
-            {(["day", "week", "month"] as CalendarView[]).map((v) => (
+            {(["day", "week"] as CalendarView[]).map((v) => (
               <button
                 key={v}
                 onClick={() => setView(v)}
@@ -187,16 +141,6 @@ export default function Calendar() {
         {view === "week" && (
           <WeekView
             currentDate={currentDate}
-            onSelectDate={(d) => {
-              setCurrentDate(d);
-              setView("day");
-            }}
-          />
-        )}
-        {view === "month" && (
-          <MonthView
-            currentDate={currentDate}
-            availability={availabilityData?.data || []}
             onSelectDate={(d) => {
               setCurrentDate(d);
               setView("day");
