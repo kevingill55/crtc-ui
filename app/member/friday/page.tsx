@@ -212,7 +212,7 @@ function EmailModal({
   const toggle = (id: string) => {
     setSelected((prev) => {
       const next = new Set(prev);
-      next.has(id) ? next.delete(id) : next.add(id);
+      if (next.has(id)) next.delete(id); else next.add(id);
       return next;
     });
   };
@@ -309,7 +309,6 @@ export default function Friday() {
   const queryClient = useQueryClient();
 
   const [view, setView] = useState<"member" | "coordinator">("member");
-  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [confirmCancelId, setConfirmCancelId] = useState<string | null>(null);
 
   // Coordinator player management
@@ -566,36 +565,6 @@ export default function Friday() {
     },
   });
 
-  const { mutate: deleteSession, isPending: deletePending } = useMutation({
-    mutationFn: async (seasonId: string) => {
-      const res = await apiFetch(`/api/seasons/${seasonId}`, {
-        method: "DELETE",
-      });
-      return res.json();
-    },
-    onSuccess: (data) => {
-      setConfirmDeleteId(null);
-      if (data.success) {
-        queryClient.invalidateQueries({
-          queryKey: ["fntSessions", fntLeague?.id],
-        });
-        addNotification({
-          status: NotificationStatus.SUCCESS,
-          id: "fnt-delete",
-          expiresIn: 5000,
-          title: "Session deleted",
-        });
-      } else {
-        addNotification({
-          status: NotificationStatus.ERROR,
-          id: "fnt-delete",
-          expiresIn: 5000,
-          title: data.message ?? "Could not delete session",
-        });
-      }
-    },
-  });
-
   const { mutate: addPlayer, isPending: addPlayerPending } = useMutation({
     mutationFn: async (memberId: string) => {
       const res = await apiFetch(
@@ -660,7 +629,6 @@ export default function Friday() {
     withdrawPending ||
     statusPending ||
     cancelPending ||
-    deletePending ||
     addPlayerPending ||
     removePlayerPending;
   const isLoading = leaguesLoading || sessionsLoading;
@@ -965,7 +933,6 @@ export default function Friday() {
                   {list.map((s) => {
                     const isCancelled = s.status === "CANCELLED";
                     const isConfirmingCancel = confirmCancelId === s.id;
-                    const isConfirmingDelete = confirmDeleteId === s.id;
                     return isCancelled ? (
                       <div
                         key={s.id}
@@ -989,33 +956,6 @@ export default function Friday() {
                             </span>
                           )}
                         </div>
-                        {confirmDeleteId === s.id ? (
-                          <div className="flex items-center gap-2">
-                            <span className="text-xs text-gray-500">
-                              Delete?
-                            </span>
-                            <button
-                              onClick={() => deleteSession(s.id)}
-                              disabled={isMutating}
-                              className="px-3 py-1 text-xs rounded-lg bg-red-600 text-white cursor-pointer"
-                            >
-                              {deletePending ? "..." : "Yes"}
-                            </button>
-                            <button
-                              onClick={() => setConfirmDeleteId(null)}
-                              className="px-3 py-1 text-xs rounded-lg border border-gray-300 text-gray-600 cursor-pointer"
-                            >
-                              No
-                            </button>
-                          </div>
-                        ) : (
-                          <button
-                            onClick={() => setConfirmDeleteId(s.id)}
-                            className="text-xs text-gray-400 hover:text-red-500 cursor-pointer transition-colors"
-                          >
-                            Delete
-                          </button>
-                        )}
                       </div>
                     ) : (
                       <div
@@ -1058,25 +998,6 @@ export default function Friday() {
                                   No
                                 </button>
                               </>
-                            ) : isConfirmingDelete ? (
-                              <>
-                                <span className="text-xs text-gray-500">
-                                  Delete?
-                                </span>
-                                <button
-                                  onClick={() => deleteSession(s.id)}
-                                  disabled={isMutating}
-                                  className="px-3 py-1.5 text-sm rounded-lg bg-red-600 text-white hover:bg-red-700 disabled:opacity-40 cursor-pointer"
-                                >
-                                  {deletePending ? "..." : "Yes"}
-                                </button>
-                                <button
-                                  onClick={() => setConfirmDeleteId(null)}
-                                  className="px-3 py-1.5 text-sm rounded-lg border border-gray-300 text-gray-600 cursor-pointer"
-                                >
-                                  No
-                                </button>
-                              </>
                             ) : (
                               <>
                                 <button
@@ -1102,13 +1023,6 @@ export default function Friday() {
                                   className="px-4 py-1.5 text-sm rounded-lg border border-gray-200 text-gray-500 hover:border-amber-300 hover:text-amber-600 disabled:opacity-40 cursor-pointer transition-colors"
                                 >
                                   Cancel
-                                </button>
-                                <button
-                                  onClick={() => setConfirmDeleteId(s.id)}
-                                  disabled={isMutating}
-                                  className="px-4 py-1.5 text-sm rounded-lg border border-gray-200 text-gray-500 hover:border-red-300 hover:text-red-500 disabled:opacity-40 cursor-pointer transition-colors"
-                                >
-                                  Delete
                                 </button>
                               </>
                             )}

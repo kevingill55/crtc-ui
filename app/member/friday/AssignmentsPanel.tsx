@@ -91,7 +91,7 @@ function CellPicker({
               key={id}
               className="bg-primary/10 text-primary text-xs px-1.5 py-0.5 rounded font-medium"
             >
-              {nameMap[id]?.split(" ")[0] ?? "?"}
+              {nameMap[id] ?? "?"}
             </span>
           ))
         )}
@@ -408,7 +408,7 @@ export function AssignmentsView({
                                     : "bg-gray-100 text-gray-600"
                                 }`}
                               >
-                                {nameMap[id]?.split(" ")[0] ?? "?"}
+                                {nameMap[id] ?? "?"}
                               </span>
                             );
                           })

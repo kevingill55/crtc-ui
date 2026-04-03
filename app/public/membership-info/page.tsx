@@ -13,7 +13,7 @@ export default function MembershipInfo() {
           <div className="flex flex-col gap-4 py-4 text-main">
             <p>
               First time members, please review the{" "}
-              <a className="text-blue-500 hover:cursor-pointer">Wait List</a>{" "}
+              <a href="/CRTC_WaitListPolicy.pdf" target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:cursor-pointer">Wait List</a>{" "}
               policy.
             </p>
             <p>
@@ -89,7 +89,7 @@ export default function MembershipInfo() {
             <p>
               League registration is handled via the website from the Member's
               Area page. Here are the{" "}
-              <a className="hover:cursor-pointer text-blue-500">
+              <a href="/CRTC_LeagueRulesAndRegulations.pdf" target="_blank" rel="noopener noreferrer" className="hover:cursor-pointer text-blue-500">
                 League Rules and Regulations.
               </a>
             </p>

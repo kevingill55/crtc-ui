@@ -54,14 +54,14 @@ export function CourtBookingPanel({
   const toggleSlot = (s: number) =>
     setSelectedSlots((prev) => {
       const next = new Set(prev);
-      next.has(s) ? next.delete(s) : next.add(s);
+      if (next.has(s)) next.delete(s); else next.add(s);
       return next;
     });
 
   const toggleCourt = (c: number) =>
     setSelectedCourts((prev) => {
       const next = new Set(prev);
-      next.has(c) ? next.delete(c) : next.add(c);
+      if (next.has(c)) next.delete(c); else next.add(c);
       return next;
     });
 

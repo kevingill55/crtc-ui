@@ -92,7 +92,7 @@ function ReserveForm() {
     },
     enabled: !!user,
   });
-  const myLeagues = myLeaguesData?.data ?? [];
+  const myLeagues = useMemo(() => myLeaguesData?.data ?? [], [myLeaguesData]);
   const isLeagueCoordinator = myLeagues.length > 0;
 
   // Show the league/club multi-slot form vs the regular single-slot form.
@@ -134,7 +134,7 @@ function ReserveForm() {
     if (myLeagues.length === 1 && !selectedLeagueId) {
       setSelectedLeagueId(myLeagues[0].id);
     }
-  }, [myLeagues]);
+  }, [myLeagues, selectedLeagueId]);
 
   const selectedLeague =
     myLeagues.find((l) => l.id === selectedLeagueId) ?? null;
@@ -144,7 +144,7 @@ function ReserveForm() {
     if (selectedLeague) {
       setReservationName(selectedLeague.name);
     }
-  }, [selectedLeagueId]);
+  }, [selectedLeagueId, selectedLeague]);
 
   // Fetch availability for the selected date.
   const { data: slotsData } = useQuery<GetSlotsApiResponse>({
@@ -188,7 +188,7 @@ function ReserveForm() {
     const key = `${s}-${c}`;
     setSelectedCells((prev) => {
       const next = new Set(prev);
-      next.has(key) ? next.delete(key) : next.add(key);
+      if (next.has(key)) next.delete(key); else next.add(key);
       return next;
     });
   };

@@ -47,7 +47,7 @@ export default function Board() {
           <h2 className="text-primary text-2xl font-bold">Club Bylaws</h2>
           <div className="flex flex-col gap-4 py-4 text-main">
             <p>
-              <a className="text-blue-500 hover:cursor-pointer">Club bylaws</a>
+              <a href="/CRTC_By_Laws_Nov2020.pdf" target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:cursor-pointer">Club bylaws</a>
             </p>
           </div>
         </div>

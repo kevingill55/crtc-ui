@@ -329,7 +329,7 @@ export default function AdminEmail() {
         return res.json();
       },
     });
-  const activeMembers = activeMembersData?.data ?? [];
+  const activeMembers = useMemo(() => activeMembersData?.data ?? [], [activeMembersData]);
 
   const { data: waitlistMembersData, isLoading: waitlistLoading } = useQuery<{
     data: Member[];
@@ -342,7 +342,7 @@ export default function AdminEmail() {
       return res.json();
     },
   });
-  const waitlistMembers = waitlistMembersData?.data ?? [];
+  const waitlistMembers = useMemo(() => waitlistMembersData?.data ?? [], [waitlistMembersData]);
 
   const { data: leaguesData, isLoading: leaguesLoading } = useQuery<{
     success: boolean;
@@ -354,7 +354,7 @@ export default function AdminEmail() {
       return res.json();
     },
   });
-  const leagues = leaguesData?.data ?? [];
+  const leagues = useMemo(() => leaguesData?.data ?? [], [leaguesData]);
 
   const leagueRosterResults = useQueries({
     queries: leagues.map((league) => ({
@@ -409,7 +409,7 @@ export default function AdminEmail() {
     const isRemoving = selectedGroups.has(id);
     setSelectedGroups((prev) => {
       const next = new Set(prev);
-      isRemoving ? next.delete(id) : next.add(id);
+      if (isRemoving) next.delete(id); else next.add(id);
       return next;
     });
     // Sync active/waitlist selections into manualMemberIds
@@ -435,7 +435,7 @@ export default function AdminEmail() {
   const toggleMember = (id: string) => {
     setManualMemberIds((prev) => {
       const next = new Set(prev);
-      next.has(id) ? next.delete(id) : next.add(id);
+      if (next.has(id)) next.delete(id); else next.add(id);
       return next;
     });
   };

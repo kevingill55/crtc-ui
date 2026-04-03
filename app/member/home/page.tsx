@@ -8,8 +8,8 @@ import {
   faArrowRight,
   faBookmark,
   faCalendar,
-  faCircleExclamation,
   faClock,
+  faMoon,
   faPeopleGroup,
   faTrophy,
   faUsers,
@@ -28,7 +28,8 @@ const getGreeting = () => {
 
 const getDateString = (str: string) =>
   new Date(str + "T00:00:00").toLocaleDateString("en-US", {
-    month: "long",
+    weekday: "short",
+    month: "short",
     day: "numeric",
     timeZone: "America/New_York",
   });
@@ -61,7 +62,7 @@ const getCourtsDisplay = (item: Reservation) => {
     : `Courts ${courts.join(", ")}`;
 };
 
-function QuickActionCard({
+function NavCard({
   href,
   icon,
   label,
@@ -74,50 +75,53 @@ function QuickActionCard({
 }) {
   return (
     <Link href={href}>
-      <div className="bg-white rounded-xl border border-gray-200 p-5 flex flex-col items-center gap-3 hover:border-primary/40 hover:shadow-md transition-all hover:cursor-pointer text-center h-full">
-        <div className="bg-primary/10 text-primary rounded-full w-12 h-12 flex items-center justify-center">
+      <div className="group bg-white rounded-2xl border border-gray-100 p-4 flex items-center gap-4 hover:shadow-md hover:border-gray-200 transition-all cursor-pointer">
+        <div className="bg-primary/8 text-primary rounded-xl w-11 h-11 flex items-center justify-center shrink-0">
           <FontAwesomeIcon icon={icon} />
         </div>
-        <div>
-          <p className="text-sm font-semibold text-primary">{label}</p>
-          <p className="text-xs text-gray-500 mt-0.5">{sub}</p>
+        <div className="flex-1 min-w-0">
+          <p className="font-semibold text-gray-800 text-sm">{label}</p>
+          <p className="text-xs text-gray-400 mt-0.5">{sub}</p>
         </div>
+        <FontAwesomeIcon
+          icon={faArrowRight}
+          className="text-gray-300 group-hover:text-primary group-hover:translate-x-0.5 transition-all shrink-0 text-xs"
+        />
       </div>
     </Link>
   );
 }
 
-function FeatureCard({
+function InfoTile({
   icon,
   title,
-  description,
-  iconBg,
-  iconColor,
-  cardBg,
-  border,
+  body,
+  num,
 }: {
   icon: IconDefinition;
   title: string;
-  description: string;
-  iconBg: string;
-  iconColor: string;
-  cardBg: string;
-  border: string;
+  body: string;
+  num: number;
 }) {
   return (
-    <div className={`${cardBg} ${border} border rounded-xl p-5`}>
-      <div
-        className={`${iconBg} ${iconColor} rounded-lg w-10 h-10 flex items-center justify-center mb-3`}
-      >
-        <FontAwesomeIcon icon={icon} />
+    <div className="bg-white rounded-2xl border border-gray-100 p-5 flex flex-col gap-3">
+      <div className="flex items-start justify-between">
+        <div className="bg-gray-50 text-gray-400 rounded-xl w-10 h-10 flex items-center justify-center">
+          <FontAwesomeIcon icon={icon} size="sm" />
+        </div>
+        <span className="text-3xl font-bold text-gray-100 leading-none select-none">
+          {num}
+        </span>
       </div>
-      <h3 className="font-semibold text-sm text-gray-800 mb-1">{title}</h3>
-      <p className="text-xs text-gray-600 leading-relaxed">{description}</p>
+      <div>
+        <p className="font-semibold text-gray-800 text-sm">{title}</p>
+        <p className="text-xs text-gray-500 leading-relaxed mt-1">{body}</p>
+      </div>
     </div>
   );
 }
 
-function UpcomingPreview() {
+function UpcomingReservations() {
   const { data, isLoading } = useQuery<{ data: Reservation[] }>({
     queryKey: ["getUpcomingReservations"],
     queryFn: async () => {
@@ -131,29 +135,44 @@ function UpcomingPreview() {
   const upcoming = (data?.data ?? []).slice(0, 3);
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 p-5">
-      <div className="flex justify-between items-center mb-4">
-        <h2 className="font-semibold text-primary">Upcoming Reservations</h2>
+    <div className="bg-white rounded-2xl border border-gray-100 p-6">
+      <div className="flex justify-between items-center mb-5">
+        <h2 className="font-semibold text-gray-800">Upcoming Reservations</h2>
         <Link
           href="/member/reservations"
-          className="text-xs font-bold text-primary/70 hover:text-primary flex items-center gap-1.5 transition-colors"
+          className="group text-xs font-medium text-gray-400 hover:text-primary flex items-center gap-1.5 transition-colors"
         >
-          Manage all <FontAwesomeIcon icon={faArrowRight} size="xs" />
+          Manage all
+          <FontAwesomeIcon
+            icon={faArrowRight}
+            size="xs"
+            className="group-hover:translate-x-0.5 transition-transform"
+          />
         </Link>
       </div>
 
       {isLoading ? (
-        <p className="text-sm text-gray-400 py-2">Loading...</p>
+        <div className="flex flex-col gap-3">
+          {[1, 2].map((i) => (
+            <div key={i} className="h-16 bg-gray-50 rounded-xl animate-pulse" />
+          ))}
+        </div>
       ) : upcoming.length === 0 ? (
-        <div className="py-8 flex flex-col items-center gap-2">
-          <FontAwesomeIcon
-            icon={faCircleExclamation}
-            className="text-gray-300 text-2xl"
-          />
-          <p className="text-sm text-gray-500">No upcoming reservations</p>
+        <div className="py-10 flex flex-col items-center gap-3 text-center">
+          <div className="w-12 h-12 rounded-full bg-gray-50 flex items-center justify-center">
+            <FontAwesomeIcon icon={faCalendar} className="text-gray-300" />
+          </div>
+          <div>
+            <p className="text-sm font-medium text-gray-500">
+              No upcoming reservations
+            </p>
+            <p className="text-xs text-gray-400 mt-0.5">
+              Book a court to get started
+            </p>
+          </div>
           <Link
             href="/member/reserve"
-            className="text-xs text-primary hover:underline mt-1"
+            className="mt-1 text-xs font-semibold text-primary border border-primary/20 bg-primary/5 hover:bg-primary/10 transition-colors px-4 py-1.5 rounded-lg"
           >
             Reserve a court
           </Link>
@@ -163,17 +182,22 @@ function UpcomingPreview() {
           {upcoming.map((item) => (
             <div
               key={item.id}
-              className="p-3 bg-blue-50 border-l-4 border-blue-300 rounded-lg flex justify-between items-center"
+              className="flex items-center justify-between gap-4 p-4 bg-gray-50 hover:bg-gray-100 transition-colors rounded-xl"
             >
-              <div>
-                <p className="text-sm font-medium text-gray-800">{item.name}</p>
-                <p className="text-xs text-gray-500 mt-0.5">
-                  {getDateString(item.date)}
-                </p>
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="w-1.5 h-1.5 rounded-full bg-tennis shrink-0" />
+                <div className="min-w-0">
+                  <p className="text-sm font-medium text-gray-800 truncate">
+                    {item.name}
+                  </p>
+                  <p className="text-xs text-gray-400 mt-0.5">
+                    {getDateString(item.date)}
+                  </p>
+                </div>
               </div>
               <div className="text-right text-xs text-gray-500 shrink-0">
-                <p>{getCourtsDisplay(item)}</p>
-                <p>{getSlotsDisplay(item)}</p>
+                <p className="font-medium">{getCourtsDisplay(item)}</p>
+                <p className="text-gray-400">{getSlotsDisplay(item)}</p>
               </div>
             </div>
           ))}
@@ -188,94 +212,107 @@ export default function Home() {
 
   return (
     <ProtectedPage>
-      <div className="flex flex-col gap-6 w-full pb-12">
+      <div className="flex flex-col gap-5 w-full pb-12">
         {/* Hero */}
-        <div className="relative overflow-hidden w-full bg-gradient-to-br from-primary via-[#253c5b] to-secondary rounded-2xl p-8 text-white min-h-[170px] flex items-center">
-          <span className="absolute -right-4 -top-6 text-[130px] opacity-10 select-none rotate-12 pointer-events-none">
-            🎾
-          </span>
-          <span className="absolute right-28 -bottom-10 text-[90px] opacity-10 select-none -rotate-6 pointer-events-none">
-            🎾
-          </span>
-          <div className="relative">
-            <p className="text-white/50 text-xs uppercase tracking-widest mb-2">
-              Member Portal
-            </p>
-            <h1 className="text-3xl font-bold">
-              {getGreeting()}, {user?.first_name ?? "Member"}!
-            </h1>
-            <p className="text-white/60 mt-1 text-sm">
+        <div className="relative overflow-hidden w-full bg-linear-to-br from-primary via-[#253c5b] to-secondary rounded-3xl p-10 text-white">
+          {/* Glow orbs */}
+          <div className="absolute -right-10 -top-10 w-64 h-64 rounded-full bg-tennis/10 blur-3xl pointer-events-none" />
+          <div className="absolute right-40 -bottom-16 w-48 h-48 rounded-full bg-secondary/40 blur-3xl pointer-events-none" />
+
+          <div className="relative z-10">
+            <p className="text-tennis text-xs uppercase tracking-widest font-semibold mb-3">
               Charles River Tennis Club
             </p>
+            <h1 className="text-4xl font-bold leading-tight">
+              {getGreeting()}
+              {", "}
+              {user?.first_name ?? "Member"}
+            </h1>
+            <p className="text-white/50 text-sm mt-2 max-w-sm">
+              Welcome to your member portal. Book courts, track leagues, and
+              connect with fellow members.
+            </p>
+            <div className="flex gap-3 mt-6">
+              <Link href="/member/reserve">
+                <button className="bg-tennis text-primary font-semibold text-sm px-6 py-2.5 rounded-xl hover:bg-tennis/80 transition-colors cursor-pointer">
+                  Reserve a court
+                </button>
+              </Link>
+              <Link href="/member/calendar">
+                <button className="border border-white/20 text-white text-sm px-6 py-2.5 rounded-xl hover:bg-white/10 transition-colors cursor-pointer">
+                  View calendar
+                </button>
+              </Link>
+            </div>
           </div>
         </div>
 
-        {/* Quick Actions */}
-        <div className="grid grid-cols-4 gap-3">
-          <QuickActionCard
-            href="/member/reserve"
-            icon={faBookmark}
-            label="Reserve"
-            sub="Book a court"
-          />
-          <QuickActionCard
-            href="/member/reservations"
-            icon={faCalendar}
-            label="My Reservations"
-            sub="Manage your schedule"
-          />
-          <QuickActionCard
-            href="/member/leagues"
-            icon={faTrophy}
-            label="Leagues"
-            sub="Enroll and view rosters"
-          />
-          <QuickActionCard
-            href="/member/list"
-            icon={faPeopleGroup}
-            label="Members"
-            sub="Club directory"
-          />
-        </div>
+        {/* Main content grid */}
+        <div className="grid grid-cols-3 gap-5">
+          {/* Left col: Nav cards + info tiles */}
+          <div className="col-span-2 flex flex-col gap-5">
+            {/* Navigation cards */}
+            <div className="grid grid-cols-2 gap-3">
+              <NavCard
+                href="/member/reserve"
+                icon={faBookmark}
+                label="Reserve"
+                sub="Book a court up to 7 days out"
+              />
+              <NavCard
+                href="/member/reservations"
+                icon={faCalendar}
+                label="My Schedule"
+                sub="View and manage your bookings"
+              />
+              <NavCard
+                href="/member/leagues"
+                icon={faTrophy}
+                label="Leagues"
+                sub="Rosters, enrollment, standings"
+              />
+              <NavCard
+                href="/member/friday"
+                icon={faMoon}
+                label="Friday Night Tennis"
+                sub="Organized play and social tennis"
+              />
+              <NavCard
+                href="/member/list"
+                icon={faPeopleGroup}
+                label="Members"
+                sub="Browse the club directory"
+              />
+            </div>
 
-        {/* How It Works */}
-        <div>
-          <h2 className="text-base font-semibold text-primary mb-3">
-            How It Works
-          </h2>
-          <div className="grid grid-cols-3 gap-4">
-            <FeatureCard
-              icon={faClock}
-              title="Booking Window"
-              description="Court reservations open at 10 PM, exactly 7 days before your desired date."
-              iconBg="bg-blue-100"
-              iconColor="text-blue-600"
-              cardBg="bg-blue-50"
-              border="border-blue-200"
-            />
-            <FeatureCard
-              icon={faUsers}
-              title="Playing with Others"
-              description="Add fellow members to your reservation so everyone can view and cancel it. Perfect for planning group sessions."
-              iconBg="bg-green-100"
-              iconColor="text-green-600"
-              cardBg="bg-green-50"
-              border="border-green-200"
-            />
-            <FeatureCard
-              icon={faTrophy}
-              title="League Play"
-              description="CRTC offers organized leagues across multiple formats. Visit the Leagues page to see rosters and enroll when registration opens."
-              iconBg="bg-amber-100"
-              iconColor="text-amber-600"
-              cardBg="bg-amber-50"
-              border="border-amber-200"
-            />
+            {/* Info tiles */}
+            <div className="grid grid-cols-3 gap-3">
+              <InfoTile
+                num={1}
+                icon={faClock}
+                title="Booking Window"
+                body="Reservations open at 10 PM, exactly 7 days before your desired date."
+              />
+              <InfoTile
+                num={2}
+                icon={faUsers}
+                title="Group Play"
+                body="Add fellow members to your reservation so everyone can view and manage it."
+              />
+              <InfoTile
+                num={3}
+                icon={faTrophy}
+                title="Leagues"
+                body="Singles and doubles leagues run June–August with playoffs in the fall."
+              />
+            </div>
+          </div>
+
+          {/* Right col: Upcoming */}
+          <div className="col-span-1">
+            <UpcomingReservations />
           </div>
         </div>
-
-        {/* Upcoming preview */}
-        <UpcomingPreview />
       </div>
     </ProtectedPage>
   );

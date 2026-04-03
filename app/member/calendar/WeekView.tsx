@@ -3,7 +3,11 @@
 import { useMemo } from "react";
 import { useQueries } from "@tanstack/react-query";
 import { apiFetch } from "@/app/clients/api";
-import { isWateringSlot, toEasternISO, getSlotOverviewLabel } from "@/app/utils";
+import {
+  isWateringSlot,
+  toEasternISO,
+  getSlotOverviewLabel,
+} from "@/app/utils";
 import { GetSlotsApiResponse, Slot } from "@/app/types";
 
 const COURTS = [1, 2, 3, 4];
@@ -38,7 +42,9 @@ export default function WeekView({
     queries: weekDateIsos.map((iso) => ({
       queryKey: ["getSlotsByDay", iso],
       queryFn: async (): Promise<GetSlotsApiResponse> => {
-        const res = await apiFetch(`/api/reservations?date=${iso}`, { method: "GET" });
+        const res = await apiFetch(`/api/reservations?date=${iso}`, {
+          method: "GET",
+        });
         return res.json();
       },
     })),
@@ -57,7 +63,10 @@ export default function WeekView({
   return (
     <div className="h-full flex flex-col bg-white rounded-xl border border-gray-200 overflow-hidden">
       {/* Day headers */}
-      <div className="grid border-b border-gray-200 shrink-0" style={{ gridTemplateColumns: colTemplate }}>
+      <div
+        className="grid border-b border-gray-200 shrink-0"
+        style={{ gridTemplateColumns: colTemplate }}
+      >
         <div className="bg-primary" />
         {weekDates.map((d, i) => {
           const iso = weekDateIsos[i];
@@ -73,7 +82,11 @@ export default function WeekView({
               <p className="text-xs font-semibold uppercase tracking-wide text-white/70">
                 {DAY_NAMES[i]}
               </p>
-              <p className={`text-xl font-bold text-white ${isToday ? "underline underline-offset-2" : ""}`}>
+              <p
+                className={`text-xl font-bold text-white ${
+                  isToday ? "underline underline-offset-2" : ""
+                }`}
+              >
                 {d.getDate()}
               </p>
             </div>
@@ -113,7 +126,9 @@ export default function WeekView({
                   <div className="flex gap-1">
                     {COURTS.map((court) => {
                       const isWatering = isWateringSlot(slotIdx, court);
-                      const isBooked = slot ? !!slot.reservationsByCourt[court] : false;
+                      const isBooked = slot
+                        ? !!slot.reservationsByCourt[court]
+                        : false;
                       return (
                         <span
                           key={court}
@@ -124,7 +139,7 @@ export default function WeekView({
                               ? "bg-sky-200"
                               : isBooked
                               ? "bg-gray-300"
-                              : "bg-lime-400"
+                              : "bg-amber-200"
                           }`}
                         />
                       );

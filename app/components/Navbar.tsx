@@ -4,12 +4,8 @@ import { useRouter } from "next/navigation";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faAngleDown,
-  faBookOpen,
-  faCircleDot,
   faPeopleGroup,
   faFileLines,
-  faUnlock,
-  faBarsStaggered,
   faArrowRight,
   IconDefinition,
   faBars,
