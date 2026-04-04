@@ -173,7 +173,9 @@ function ReserveForm() {
   const availableCourtOptions = useMemo(() => {
     if (!slot) return courtDropdownOptions;
     return courtDropdownOptions.filter(
-      (opt) => !bookedCells.has(`${slot}-${opt.value}`)
+      (opt) =>
+        !isWateringSlot(slot, opt.value as number) &&
+        !bookedCells.has(`${slot}-${opt.value}`)
     );
   }, [slot, bookedCells]);
 
@@ -418,7 +420,20 @@ function ReserveForm() {
             <div className="flex flex-col gap-3">
               <div className="flex flex-col gap-4 w-full">
                 <div className="w-1/2">
-                  <label className="text-gray-600">Court</label>
+                  <label className="text-gray-600">Time</label>
+                  <Dropdown
+                    label={
+                      slot === 0
+                        ? "Select a time"
+                        : slotDropdownOptions.find((o) => o.value === slot)?.label ?? "Select a time"
+                    }
+                    value={slot}
+                    onSelect={(x) => setSlot(x as number)}
+                    options={slotDropdownOptions}
+                  />
+                </div>
+                <div className="w-1/2">
+                  <label className={`${!date || !slot ? "text-gray-400" : "text-gray-600"}`}>Court</label>
                   <Dropdown
                     label={
                       court === 0
@@ -429,19 +444,7 @@ function ReserveForm() {
                     value={court}
                     onSelect={(x) => setCourt(x as number)}
                     options={availableCourtOptions}
-                  />
-                </div>
-                <div className="w-1/2">
-                  <label className="text-gray-600">Time</label>
-                  <Dropdown
-                    label={
-                      slot === 0
-                        ? "Select a time"
-                        : slotDropdownOptions[slot - 1].label
-                    }
-                    value={slot}
-                    onSelect={(x) => setSlot(x as number)}
-                    options={slotDropdownOptions}
+                    disabled={!date || !slot}
                   />
                   {slot !== 0 && slotsData && (
                     <p className="text-xs text-gray-500 mt-1">

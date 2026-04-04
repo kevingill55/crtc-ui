@@ -15,12 +15,14 @@ export const Dropdown = ({
   value,
   options,
   onSelect,
+  disabled,
 }: {
   label: string;
   value: string | number;
   widthNum?: number;
   onSelect: (val: string | number) => void;
   options: DropdownOption[];
+  disabled?: boolean;
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -38,8 +40,8 @@ export const Dropdown = ({
 
   return (
     <div className="relative" ref={dropdownRef}>
-      <div onClick={() => setIsOpen(!isOpen)}>
-        <div className="bg-white px-2.5 min-w-24 py-2 hover:cursor-pointer text-nowrap hover:bg-gray-200 flex items-center justify-center border rounded-lg border-gray-300 text-sm">
+      <div onClick={() => !disabled && setIsOpen(!isOpen)}>
+        <div className={`bg-white px-2.5 min-w-24 py-2 text-nowrap flex items-center justify-center border rounded-lg border-gray-300 text-sm ${disabled ? "opacity-40 cursor-not-allowed text-gray-400" : "hover:cursor-pointer hover:bg-gray-200"}`}>
           {normalizeString(label) || "Select"}
           <FontAwesomeIcon
             icon={!isOpen ? faCaretDown : faCaretUp}

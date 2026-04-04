@@ -220,7 +220,7 @@ export default function Home() {
           <div className="absolute right-40 -bottom-16 w-48 h-48 rounded-full bg-secondary/40 blur-3xl pointer-events-none" />
 
           <div className="relative z-10">
-            <p className="text-tennis text-xs uppercase tracking-widest font-semibold mb-3">
+            <p className="text-amber-300 text-xs uppercase tracking-widest font-semibold mb-3">
               Charles River Tennis Club
             </p>
             <h1 className="text-4xl font-bold leading-tight">
@@ -228,13 +228,13 @@ export default function Home() {
               {", "}
               {user?.first_name ?? "Member"}
             </h1>
-            <p className="text-white/50 text-sm mt-2 max-w-sm">
+            <p className="text-white/70 text-sm mt-2 max-w-md">
               Welcome to your member portal. Book courts, track leagues, and
               connect with fellow members.
             </p>
             <div className="flex gap-3 mt-6">
               <Link href="/member/reserve">
-                <button className="bg-tennis text-primary font-semibold text-sm px-6 py-2.5 rounded-xl hover:bg-tennis/80 transition-colors cursor-pointer">
+                <button className="bg-amber-300 text-primary font-semibold text-sm px-6 py-2.5 rounded-xl hover:bg-amber-300/80 transition-colors cursor-pointer">
                   Reserve a court
                 </button>
               </Link>

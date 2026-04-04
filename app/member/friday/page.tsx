@@ -111,7 +111,11 @@ function PlayerList({
                 <div
                   key={e.id}
                   className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm ${
-                    isMe ? "bg-primary/5" : i % 2 === 0 ? "bg-white" : "bg-gray-50"
+                    isMe
+                      ? "bg-primary/5"
+                      : i % 2 === 0
+                      ? "bg-white"
+                      : "bg-gray-50"
                   }`}
                 >
                   <span className="text-gray-400 w-5 text-center text-xs">
@@ -137,9 +141,11 @@ function PlayerList({
                     </span>
                   )}
                   <span className="text-gray-400 ml-auto">
-                    {new Date(e.enrolled_at).toLocaleDateString("en-US", {
+                    {new Date(e.enrolled_at).toLocaleString("en-US", {
                       month: "short",
                       day: "numeric",
+                      hour: "numeric",
+                      minute: "2-digit",
                       timeZone: "America/New_York",
                     })}
                   </span>
@@ -158,9 +164,11 @@ function PlayerList({
 function ClosedSession({
   session,
   currentUserId,
+  opensDate,
 }: {
   session: SessionWithCounts;
   currentUserId: string;
+  opensDate?: string | null;
 }) {
   const [expanded, setExpanded] = useState(false);
   const isCancelled = session.status === "CANCELLED";
@@ -175,31 +183,27 @@ function ClosedSession({
         onClick={() => setExpanded(!expanded)}
         className="w-full px-5 py-4 flex items-center justify-between gap-4 text-left hover:bg-gray-50 rounded-xl transition-colors"
       >
-        <div className="flex items-center gap-2">
-          <p
-            className={`font-medium ${
-              isCancelled ? "text-gray-400" : "text-gray-700"
-            }`}
-          >
-            {session.name}
-          </p>
-          {isCancelled ? (
-            <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-red-50 text-red-400">
-              Cancelled
-            </span>
-          ) : (
-            <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-gray-100 text-gray-400">
-              Closed
-            </span>
-          )}
-          {session.start_date && (
-            <span className="text-xs text-gray-400">
-              {new Date(session.start_date).toLocaleDateString("en-US", {
-                month: "short",
-                day: "numeric",
-                timeZone: "UTC",
-              })}
-            </span>
+        <div>
+          <div className="flex items-center gap-2">
+            <p
+              className={`font-medium ${
+                isCancelled ? "text-gray-400" : "text-gray-700"
+              }`}
+            >
+              {session.name}
+            </p>
+            {isCancelled ? (
+              <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-red-50 text-red-400">
+                Cancelled
+              </span>
+            ) : (
+              <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-gray-100 text-gray-400">
+                Closed
+              </span>
+            )}
+          </div>
+          {opensDate && (
+            <p className="text-xs text-gray-400 mt-0.5">Opens {opensDate}</p>
           )}
         </div>
         <div className="flex items-center gap-3 shrink-0">
@@ -249,7 +253,8 @@ function EmailModal({
   const toggle = (id: string) => {
     setSelected((prev) => {
       const next = new Set(prev);
-      if (next.has(id)) next.delete(id); else next.add(id);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
       return next;
     });
   };
@@ -387,11 +392,19 @@ export default function Friday() {
 
   const sessions = sessionsData?.data ?? [];
   const activeSession = sessions.find(
-    (s) => s.status === "ACTIVE" || s.status === "ENROLLMENT_OPEN" || s.status === "LOCKED"
+    (s) =>
+      s.status === "ACTIVE" ||
+      s.status === "ENROLLMENT_OPEN" ||
+      s.status === "LOCKED"
   );
   const today = new Date().toISOString().split("T")[0];
   const nonActiveSessions = sessions
-    .filter((s) => s.status !== "ACTIVE" && s.status !== "ENROLLMENT_OPEN" && s.status !== "LOCKED")
+    .filter(
+      (s) =>
+        s.status !== "ACTIVE" &&
+        s.status !== "ENROLLMENT_OPEN" &&
+        s.status !== "LOCKED"
+    )
     .sort((a, b) => {
       if (a.start_date && b.start_date)
         return a.start_date.localeCompare(b.start_date);
@@ -683,6 +696,36 @@ export default function Friday() {
         })
       : null;
 
+  // Returns "Saturday, May 10 at 10:00am ET" — the Saturday before the session's Friday (when cron opens it)
+  const formatOpensDate = (startDate: string | null) => {
+    if (!startDate) return null;
+    const friday = new Date(startDate + "T00:00:00Z");
+    const saturday = new Date(friday);
+    saturday.setUTCDate(friday.getUTCDate() - 6);
+    const dateStr = saturday.toLocaleDateString("en-US", {
+      weekday: "long",
+      month: "long",
+      day: "numeric",
+      timeZone: "UTC",
+    });
+    return `${dateStr} at 10:00am ET`;
+  };
+
+  // Returns "Saturday, May 10 at 10:00am ET" — the day after the session's Friday
+  const formatAutoAdvanceDate = (startDate: string | null) => {
+    if (!startDate) return null;
+    const friday = new Date(startDate + "T00:00:00Z");
+    const saturday = new Date(friday);
+    saturday.setUTCDate(friday.getUTCDate() + 1);
+    const dateStr = saturday.toLocaleDateString("en-US", {
+      weekday: "long",
+      month: "long",
+      day: "numeric",
+      timeZone: "UTC",
+    });
+    return `${dateStr} at 10:00am ET`;
+  };
+
   return (
     <ProtectedPage
       title="Friday Night Tennis"
@@ -724,10 +767,6 @@ export default function Friday() {
         ) : view === "coordinator" && isLC ? (
           /* ── Coordinator view ─────────────────────────────────────────── */
           <div className="flex flex-col gap-4">
-            <p className="text-sm text-gray-500">
-              {sessions.length} session{sessions.length !== 1 ? "s" : ""}
-            </p>
-
             {/* ── Active session ── */}
             {activeSession && (
               <div className="bg-white rounded-xl border border-primary/30">
@@ -750,8 +789,9 @@ export default function Friday() {
                         )}
                       </div>
                       {activeSession.start_date && (
-                        <p className="text-xs text-gray-400">
-                          {formatDate(activeSession.start_date)}
+                        <p className="text-xs text-gray-400 mt-0.5">
+                          Automatically closes on{" "}
+                          {formatAutoAdvanceDate(activeSession.start_date)}
                         </p>
                       )}
                     </div>
@@ -791,32 +831,18 @@ export default function Friday() {
                               {statusPending ? "..." : "Unlock"}
                             </button>
                           ) : (
-                            <>
-                              <button
-                                onClick={() =>
-                                  setStatus({
-                                    sessionId: activeSession.id,
-                                    status: "LOCKED",
-                                  })
-                                }
-                                disabled={isMutating}
-                                className="px-4 py-1.5 text-sm rounded-lg bg-amber-50 text-amber-700 border border-amber-200 hover:bg-amber-100 disabled:opacity-40 cursor-pointer font-medium transition-colors"
-                              >
-                                {statusPending ? "..." : "Lock"}
-                              </button>
-                              <button
-                                onClick={() =>
-                                  setStatus({
-                                    sessionId: activeSession.id,
-                                    status: "INACTIVE",
-                                  })
-                                }
-                                disabled={isMutating}
-                                className="px-4 py-1.5 text-sm rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 disabled:opacity-40 cursor-pointer font-medium transition-colors"
-                              >
-                                {statusPending ? "..." : "Deactivate"}
-                              </button>
-                            </>
+                            <button
+                              onClick={() =>
+                                setStatus({
+                                  sessionId: activeSession.id,
+                                  status: "LOCKED",
+                                })
+                              }
+                              disabled={isMutating}
+                              className="px-4 py-1.5 text-sm rounded-lg bg-amber-50 text-amber-700 border border-amber-200 hover:bg-amber-100 disabled:opacity-40 cursor-pointer font-medium transition-colors"
+                            >
+                              {statusPending ? "..." : "Lock"}
+                            </button>
                           )}
                           <button
                             onClick={() => setConfirmCancelId(activeSession.id)}
@@ -838,15 +864,23 @@ export default function Friday() {
                       Courts
                     </p>
                     {(() => {
-                      const courts = [...new Set(sessionReservations.map((r) => r.court))].sort();
-                      const slots = [...new Set(sessionReservations.map((r) => r.slot))].sort((a, b) => a - b);
+                      const courts = [
+                        ...new Set(sessionReservations.map((r) => r.court)),
+                      ].sort();
+                      const slots = [
+                        ...new Set(sessionReservations.map((r) => r.slot)),
+                      ].sort((a, b) => a - b);
                       const firstSlot = slots[0];
                       const lastSlot = slots[slots.length - 1];
                       return (
                         <ul className="list-disc list-inside flex flex-col gap-0.5">
                           {courts.map((court) => {
-                            const start = getSlotLabel(firstSlot, court).split(" – ")[0];
-                            const end = getSlotLabel(lastSlot, court).split(" – ")[1];
+                            const start = getSlotLabel(firstSlot, court).split(
+                              " – "
+                            )[0];
+                            const end = getSlotLabel(lastSlot, court).split(
+                              " – "
+                            )[1];
                             return (
                               <li key={court} className="text-sm text-gray-600">
                                 Court {court}: {start} – {end}
@@ -884,14 +918,13 @@ export default function Friday() {
                               {e.members?.first_name} {e.members?.last_name}
                             </span>
                             <span className="text-gray-400 text-xs ml-auto">
-                              {new Date(e.enrolled_at).toLocaleDateString(
-                                "en-US",
-                                {
-                                  month: "short",
-                                  day: "numeric",
-                                  timeZone: "America/New_York",
-                                }
-                              )}
+                              {new Date(e.enrolled_at).toLocaleString("en-US", {
+                                month: "short",
+                                day: "numeric",
+                                hour: "numeric",
+                                minute: "2-digit",
+                                timeZone: "America/New_York",
+                              })}
                             </span>
                             <button
                               onClick={() => removePlayer(e.member_id)}
@@ -958,14 +991,22 @@ export default function Friday() {
                     <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
                       Assignments
                     </p>
-                    {!showAssignmentsEditor && (
-                      <button
-                        onClick={() => setShowAssignmentsEditor(true)}
-                        className="text-xs text-primary hover:text-primary/70 cursor-pointer font-medium"
-                      >
-                        Edit
-                      </button>
-                    )}
+                    {!showAssignmentsEditor &&
+                      (activeSession.status === "LOCKED" ? (
+                        <button
+                          onClick={() => setShowAssignmentsEditor(true)}
+                          className="text-xs text-primary hover:text-primary/70 cursor-pointer font-medium"
+                        >
+                          Edit
+                        </button>
+                      ) : (
+                        <span
+                          className="text-xs text-gray-400"
+                          title="Lock the session before editing assignments"
+                        >
+                          Lock session to edit
+                        </span>
+                      ))}
                   </div>
                   {showAssignmentsEditor ? (
                     <AssignmentsEditor
@@ -1046,9 +1087,9 @@ export default function Friday() {
                                 Inactive
                               </span>
                             </div>
-                            {s.start_date && (
+                            {label === "Upcoming sessions" && s.start_date && (
                               <p className="text-xs text-gray-400 mt-0.5">
-                                {formatDate(s.start_date)}
+                                Opens {formatOpensDate(s.start_date)}
                               </p>
                             )}
                           </div>
@@ -1073,32 +1114,13 @@ export default function Friday() {
                                 </button>
                               </>
                             ) : (
-                              <>
-                                <button
-                                  onClick={() =>
-                                    setStatus({
-                                      sessionId: s.id,
-                                      status: "ACTIVE",
-                                    })
-                                  }
-                                  disabled={isMutating || !!activeSession}
-                                  title={
-                                    activeSession
-                                      ? "Deactivate current session first"
-                                      : undefined
-                                  }
-                                  className="px-4 py-1.5 text-sm rounded-lg bg-primary text-white hover:bg-primary/80 disabled:opacity-40 cursor-pointer font-medium transition-colors"
-                                >
-                                  {statusPending ? "..." : "Activate"}
-                                </button>
-                                <button
-                                  onClick={() => setConfirmCancelId(s.id)}
-                                  disabled={isMutating}
-                                  className="px-4 py-1.5 text-sm rounded-lg border border-gray-200 text-gray-500 hover:border-amber-300 hover:text-amber-600 disabled:opacity-40 cursor-pointer transition-colors"
-                                >
-                                  Cancel
-                                </button>
-                              </>
+                              <button
+                                onClick={() => setConfirmCancelId(s.id)}
+                                disabled={isMutating}
+                                className="px-4 py-1.5 text-sm rounded-lg border border-gray-200 text-gray-500 hover:border-red-300 hover:text-red-500 disabled:opacity-40 cursor-pointer transition-colors"
+                              >
+                                Cancel
+                              </button>
                             )}
                           </div>
                         </div>
@@ -1119,50 +1141,54 @@ export default function Friday() {
             {activeSession ? (
               <div className="bg-white rounded-xl border border-primary/30 shadow-sm">
                 <div className="px-6 py-5 border-b border-gray-100">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <p className="font-semibold text-gray-800 text-lg">
-                      {activeSession.name}
-                    </p>
-                    <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-blue-100 text-blue-700">
-                      Signup Open
-                    </span>
-                    {myStatus && <EnrollmentStatusBadge status={myStatus} />}
-                  </div>
-                  {activeSession.start_date && (
-                    <p className="text-sm text-gray-500 mt-1">
-                      {formatDate(activeSession.start_date)}
-                    </p>
-                  )}
-                  <div className="mt-4 flex flex-col gap-2">
-                    <div className="flex gap-2">
-                      {myStatus === null && (
-                        <button
-                          onClick={() => enroll()}
-                          disabled={isMutating}
-                          className="px-5 py-2 text-sm rounded-lg bg-primary text-white hover:bg-primary/80 disabled:opacity-40 cursor-pointer"
-                        >
-                          Sign Up
-                        </button>
-                      )}
-                      {myStatus !== null && (
-                        <button
-                          onClick={() => withdraw()}
-                          disabled={isMutating || (activeSession.status === "LOCKED" && myStatus === "ACTIVE")}
-                          title={
-                            activeSession.status === "LOCKED" && myStatus === "ACTIVE"
-                              ? "Withdrawals are disabled once assignments have been set"
-                              : undefined
-                          }
-                          className="px-4 py-2 text-sm rounded-lg border border-gray-300 text-gray-600 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
-                        >
-                          Withdraw
-                        </button>
-                      )}
+                  <div className="flex items-start justify-between gap-4">
+                    <div>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <p className="font-semibold text-gray-800 text-lg">
+                          {activeSession.name}
+                        </p>
+                        {activeSession.status === "LOCKED" ? (
+                          <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-amber-100 text-amber-700">
+                            Locked
+                          </span>
+                        ) : (
+                          <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-blue-100 text-blue-700">
+                            Signup Open
+                          </span>
+                        )}
+                        {myStatus && (
+                          <EnrollmentStatusBadge status={myStatus} />
+                        )}
+                      </div>
+                      {activeSession.status === "ACTIVE" &&
+                        activeSession.start_date && (
+                          <p className="text-xs text-gray-400 mt-0.5">
+                            Automatically closes at{" "}
+                            {formatAutoAdvanceDate(activeSession.start_date)}
+                          </p>
+                        )}
                     </div>
-                    {activeSession.status === "LOCKED" && myStatus === "ACTIVE" && (
-                      <p className="text-xs text-amber-600">
-                        Assignments have been set — withdrawals are no longer available.
-                      </p>
+                    {activeSession.status !== "LOCKED" && (
+                      <div className="shrink-0">
+                        {myStatus === null && (
+                          <button
+                            onClick={() => enroll()}
+                            disabled={isMutating}
+                            className="px-4 py-1.5 text-sm rounded-lg bg-primary text-white hover:bg-primary/80 disabled:opacity-40 cursor-pointer"
+                          >
+                            Sign Up
+                          </button>
+                        )}
+                        {myStatus !== null && (
+                          <button
+                            onClick={() => withdraw()}
+                            disabled={isMutating}
+                            className="px-4 py-1.5 text-sm rounded-lg border border-gray-300 text-gray-600 hover:bg-gray-50 disabled:opacity-40 cursor-pointer"
+                          >
+                            Withdraw
+                          </button>
+                        )}
+                      </div>
                     )}
                   </div>
                 </div>
@@ -1208,6 +1234,11 @@ export default function Friday() {
                       key={s.id}
                       session={s}
                       currentUserId={user?.id ?? ""}
+                      opensDate={
+                        label === "Upcoming sessions"
+                          ? formatOpensDate(s.start_date)
+                          : null
+                      }
                     />
                   ))}
                 </div>
