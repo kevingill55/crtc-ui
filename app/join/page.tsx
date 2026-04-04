@@ -104,17 +104,18 @@ export default function SignUp() {
 
   return (
     <PublicPage>
-      <div className="w-full pt-10 flex flex-col h-full gap-6">
+      <div className="w-full pt-10 pb-12 px-4 md:px-0 flex flex-col gap-6 md:max-w-lg">
         <div>
           <h1 className="text-primary font-bold text-2xl">
             New member application (2026)
           </h1>
-          <p className="text-sm text-gray-500">
+          <p className="text-sm text-gray-500 mt-1">
             This is for first time applicants only. Previous members wishing to
             rejoin should login and complete the renewal process.
           </p>
         </div>
-        <div className="flex gap-4 w-175 justify-between">
+
+        <div className="flex flex-col md:flex-row gap-4">
           <div className="flex flex-col gap-2 w-full">
             <label htmlFor="crtc-first-name" className="text-gray-600">
               First name
@@ -143,111 +144,106 @@ export default function SignUp() {
           </div>
         </div>
 
-        <div className="flex gap-4 w-175 justify-between">
-          <div className="flex flex-col gap-2 w-full">
-            <label htmlFor="crtc-email" className="text-gray-600">
-              Email
-            </label>
-            <EmailInput
-              id="crtc-email"
-              emailError={emailError}
-              setEmailError={setEmailError}
-              email={email}
-              setEmail={setEmail}
-            />
-          </div>
-          <div className="flex flex-col gap-2 w-full">
-            <label htmlFor="crtc-phone-num" className="text-gray-600">
-              Phone number
-            </label>
-            <PhoneInput id="crtc-phone-num" setPhone={setPhone} phone={phone} />
-          </div>
-        </div>
-        {emailError && (
-          <span className="text-sm text-red-500">{emailError}</span>
-        )}
-
-        <div className="flex gap-4 w-175 justify-between">
-          <div className="flex flex-col gap-2 w-full">
-            <label htmlFor="crtc-home-address" className="text-gray-600">
-              Address
-            </label>
-            <input
-              id="crtc-home-address"
-              value={address}
-              onChange={(e) => setAddress(e.target.value)}
-              type="text"
-              placeholder="1234 Charles River Rd, Medway, MA 02053"
-              className="px-4 py-2 rounded-lg border border-gray-300 focus:outline-1 focus:outline-primary hover:border-gray-500"
-            />
-          </div>
-        </div>
-
-        <div className="flex gap-4 w-175 justify-between">
-          <fieldset className="flex flex-col gap-2 w-full">
-            <legend className="text-gray-600">Plan</legend>
-            <div className="flex gap-2 mt-1">
-              {(["ADULT", "JUNIOR"] as const).map((value) => (
-                <label
-                  key={value}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-lg border cursor-pointer transition-colors text-sm font-medium ${
-                    plan === value
-                      ? "border-primary bg-primary/10 text-primary"
-                      : "border-gray-300 text-gray-600 hover:border-gray-400 hover:bg-gray-50"
-                  }`}
-                >
-                  <input
-                    type="radio"
-                    name="plan"
-                    value={value}
-                    checked={plan === value}
-                    onChange={() => setPlan(value)}
-                    className="sr-only"
-                  />
-                  {value === "ADULT" ? "Adult" : "Junior"}
-                </label>
-              ))}
-            </div>
-          </fieldset>
-        </div>
-
-        <div className="flex flex-col gap-4 w-175 mt-6">
-          <label className="flex items-start gap-3 cursor-pointer text-sm text-gray-700">
-            <input
-              type="checkbox"
-              checked={waiverAccepted}
-              onChange={(e) => setWaiverAccepted(e.target.checked)}
-              className="mt-0.5 w-4 h-4 shrink-0 accent-primary cursor-pointer"
-            />
-            <span>
-              I have read and agree to the{" "}
-              <a
-                href="/CRTC_Waiver.pdf"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-primary hover:text-primary/70 underline"
-              >
-                Waiver, Release of Liability and Assumption of Risks
-              </a>
-            </span>
+        <div className="flex flex-col gap-2">
+          <label htmlFor="crtc-email" className="text-gray-600">
+            Email
           </label>
-          <ReCAPTCHA
-            ref={recaptchaRef}
-            sitekey={process.env.NEXT_PUBLIC_GOOGLE_SITE_KEY!}
-            onChange={(token) => setCaptchaToken(token)}
-            onExpired={() => setCaptchaToken(null)}
+          <EmailInput
+            id="crtc-email"
+            emailError={emailError}
+            setEmailError={setEmailError}
+            email={email}
+            setEmail={setEmail}
           />
-          <button
-            disabled={isDisabled}
-            onClick={(e) => {
-              e.preventDefault();
-              handleSignUp();
-            }}
-            className="w-full disabled:cursor-not-allowed disabled:bg-primary/50 hover:cursor-pointer hover:bg-primary/80 rounded-lg py-2 flex justify-center items-center bg-primary text-white"
-          >
-            {loading ? "Submitting..." : "Submit"}
-          </button>
+          {emailError && (
+            <span className="text-sm text-red-500">{emailError}</span>
+          )}
         </div>
+
+        <div className="flex flex-col gap-2">
+          <label htmlFor="crtc-phone-num" className="text-gray-600">
+            Phone number
+          </label>
+          <PhoneInput id="crtc-phone-num" setPhone={setPhone} phone={phone} />
+        </div>
+
+        <div className="flex flex-col gap-2">
+          <label htmlFor="crtc-home-address" className="text-gray-600">
+            Address
+          </label>
+          <input
+            id="crtc-home-address"
+            value={address}
+            onChange={(e) => setAddress(e.target.value)}
+            type="text"
+            placeholder="1234 Charles River Rd, Medway, MA 02053"
+            className="px-4 py-2 rounded-lg border border-gray-300 focus:outline-1 focus:outline-primary hover:border-gray-500"
+          />
+        </div>
+
+        <fieldset className="flex flex-col gap-2">
+          <legend className="text-gray-600">Plan</legend>
+          <div className="flex gap-2 mt-1">
+            {(["ADULT", "JUNIOR"] as const).map((value) => (
+              <label
+                key={value}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg border cursor-pointer transition-colors text-sm font-medium ${
+                  plan === value
+                    ? "border-primary bg-primary/10 text-primary"
+                    : "border-gray-300 text-gray-600 hover:border-gray-400 hover:bg-gray-50"
+                }`}
+              >
+                <input
+                  type="radio"
+                  name="plan"
+                  value={value}
+                  checked={plan === value}
+                  onChange={() => setPlan(value)}
+                  className="sr-only"
+                />
+                {value === "ADULT" ? "Adult" : "Junior"}
+              </label>
+            ))}
+          </div>
+        </fieldset>
+
+        <label className="flex items-start gap-3 cursor-pointer text-sm text-gray-700">
+          <input
+            type="checkbox"
+            checked={waiverAccepted}
+            onChange={(e) => setWaiverAccepted(e.target.checked)}
+            className="mt-0.5 w-4 h-4 shrink-0 accent-primary cursor-pointer"
+          />
+          <span>
+            I have read and agree to the{" "}
+            <a
+              href="/CRTC_Waiver.pdf"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-primary hover:text-primary/70 underline"
+            >
+              Waiver, Release of Liability and Assumption of Risks
+            </a>
+          </span>
+        </label>
+
+        <ReCAPTCHA
+          ref={recaptchaRef}
+          sitekey={process.env.NEXT_PUBLIC_GOOGLE_SITE_KEY!}
+          onChange={(token) => setCaptchaToken(token)}
+          onExpired={() => setCaptchaToken(null)}
+        />
+
+        <button
+          disabled={isDisabled}
+          onClick={(e) => {
+            e.preventDefault();
+            handleSignUp();
+          }}
+          className="w-full disabled:cursor-not-allowed disabled:bg-primary/50 hover:cursor-pointer hover:bg-primary/80 rounded-lg py-3 flex justify-center items-center bg-primary text-white"
+        >
+          {loading ? "Submitting..." : "Submit"}
+        </button>
       </div>
     </PublicPage>
   );

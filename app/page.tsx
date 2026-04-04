@@ -12,11 +12,11 @@ export default function Welcome() {
   return (
     <PublicPage>
       <div className="py-10 px-4 flex flex-col justify-center gap-4 md:items-center">
-        <h1 className="text-primary text-5xl md:font-semibold md:tracking-tight">
+        <h1 className="text-primary md:text-4xl text-3xl md:font-semibold tracking-tight">
           Charles River Tennis Club
         </h1>
 
-        <div className="text-zinc-600 w-4/5 text-lg mb-4 md:text-center">
+        <div className="text-zinc-600 md:w-4/5 md:mb-4 md:text-center">
           A friendly clay tennis club located in a wooded, residential area near
           the Charles River. Open to the community in Medway, Massachusetts
           since 1952.
@@ -26,11 +26,11 @@ export default function Welcome() {
           <Carousel slides={slides} />
         </div>
 
-        <div className="w-full gap-4 flex h-[600px]">
-          <div className="w-full bg-blue-100 flex-col flex justify-between p-8">
+        <div className="w-full gap-4 flex flex-col md:flex-row">
+          <div className="w-full bg-blue-100 flex-col flex justify-between md:p-8 p-5">
             <div>
               <div className="pb-2 mb-4 border-b border-gray-400">
-                <h2 className="text-primary text-3xl md:tracking-tight">
+                <h2 className="text-primary md:text-2xl text-xl md:tracking-tight">
                   Why we love it here
                 </h2>
               </div>
@@ -82,10 +82,10 @@ export default function Welcome() {
               </Link>
             </div>
           </div>
-          <div className="w-full flex-col flex justify-between bg-zinc-200 p-8">
+          <div className="w-full flex-col flex justify-between bg-zinc-200 md:p-8 p-5">
             <div>
               <div className="pb-2 mb-4 border-b border-gray-400">
-                <h2 className="text-primary text-3xl md:tracking-tight">
+                <h2 className="text-primary md:text-2xl text-xl md:tracking-tight">
                   Membership benefits
                 </h2>
               </div>
