@@ -23,11 +23,12 @@ export function Carousel({
         style={{ transform: `translateX(-${current * 100}%)` }}
       >
         {slides.map((slide) => (
-          <div key={slide.src} className="relative w-full shrink-0 aspect-[8/5]">
+          <div key={slide.src} className="relative w-full shrink-0 aspect-2/1">
             <Image
               src={slide.src}
               alt={slide.alt}
               fill
+              sizes="100vw"
               className="object-cover"
             />
           </div>

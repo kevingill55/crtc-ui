@@ -1,6 +1,9 @@
 import Image from "next/image";
 import { PublicPage } from "@/app/components/PublicPage";
-import { PublicPageLayout, PublicSection } from "@/app/components/PublicPageLayout";
+import {
+  PublicPageLayout,
+  PublicSection,
+} from "@/app/components/PublicPageLayout";
 
 export default function About() {
   return (
@@ -13,24 +16,25 @@ export default function About() {
           clay-court facility and our unique approach to enjoying tennis.
         </p>
 
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+          {[
+            { src: "/CRTC_about2.jpg", alt: "CRTC club 2" },
+            { src: "/CRTC_about3.jpg", alt: "CRTC club 3" },
+            { src: "/CRTC_about4.jpg", alt: "CRTC club 4" },
+          ].map((img) => (
+            <div key={img.src} className="flex-1">
+              <Image
+                src={img.src}
+                alt={img.alt}
+                width={400}
+                height={300}
+                sizes="(max-width: 768px) 50vw, 33vw"
+                className="w-full h-full object-cover rounded"
+              />
+            </div>
+          ))}
+        </div>
         <PublicSection title="The Club">
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-            {[
-              { src: "/CRTC_about2.jpg", alt: "CRTC club" },
-              { src: "/CRTC_about3.jpg", alt: "CRTC club" },
-              { src: "/CRTC_about4.jpg", alt: "CRTC club" },
-            ].map((img) => (
-              <div key={img.src} className="flex-1">
-                <Image
-                  src={img.src}
-                  alt={img.alt}
-                  width={400}
-                  height={300}
-                  className="w-full h-full object-cover rounded"
-                />
-              </div>
-            ))}
-          </div>
           <p>
             CRTC provides play primarily for adults — we offer no lessons and
             have no provisions for child care — on four green clay courts
@@ -48,6 +52,27 @@ export default function About() {
             club daily, and all members are expected to sweep the court and
             clean the lines after their session.
           </p>
+
+          <div className="flex gap-4">
+            <div className="flex-1">
+              <Image
+                src="/CRTC_about1.jpg"
+                alt="CRTC club 1"
+                width={400}
+                height={300}
+                className="w-full h-full object-cover rounded"
+              />
+            </div>
+            <div className="flex-1">
+              <Image
+                src="/CRTC_sign.png"
+                alt="CRTC sign"
+                width={400}
+                height={300}
+                className="w-full h-full object-cover rounded"
+              />
+            </div>
+          </div>
         </PublicSection>
 
         <PublicSection title="Play & Activities">

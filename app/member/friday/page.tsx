@@ -43,6 +43,12 @@ function EnrollmentStatusBadge({
         Enrolled
       </span>
     );
+  if (status === "WAITLISTED")
+    return (
+      <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-amber-100 text-amber-700">
+        Waitlisted
+      </span>
+    );
   return null;
 }
 
@@ -61,31 +67,51 @@ function PlayerList({
     },
   });
 
+  const { data: assignmentsData } = useQuery<{
+    success: boolean;
+    data: { player_ids: string[] }[];
+  }>({
+    queryKey: ["seasonAssignments", sessionId],
+    queryFn: async () => {
+      const res = await apiFetch(`/api/seasons/${sessionId}/assignments`);
+      return res.json();
+    },
+  });
+
   if (isLoading)
     return <p className="text-sm text-gray-400 mt-3">Loading players...</p>;
 
-  const enrollments = data?.data ?? [];
-  const active = enrollments.filter((e) => e.status === "ACTIVE");
+  const enrollments = (data?.data ?? []).filter(
+    (e) => e.status === "ACTIVE" || e.status === "WAITLISTED"
+  );
+  const assignments = assignmentsData?.data ?? [];
+  const hasAssignments = assignments.length > 0;
+  const assignedIds = new Set(assignments.flatMap((a) => a.player_ids));
+
+  // When assignments exist: assigned players first, then waitlisted
+  const sorted = hasAssignments
+    ? [
+        ...enrollments.filter((e) => assignedIds.has(e.member_id)),
+        ...enrollments.filter((e) => !assignedIds.has(e.member_id)),
+      ]
+    : enrollments;
 
   return (
     <div className="mt-4">
-      {active.length > 0 ? (
+      {sorted.length > 0 ? (
         <div>
           <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
-            Players ({active.length})
+            Players ({sorted.length})
           </p>
           <div className="flex flex-col gap-1">
-            {active.map((e, i) => {
+            {sorted.map((e, i) => {
               const isMe = e.member_id === currentUserId;
+              const isAssigned = assignedIds.has(e.member_id);
               return (
                 <div
                   key={e.id}
                   className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm ${
-                    isMe
-                      ? "bg-primary/5"
-                      : i % 2 === 0
-                      ? "bg-white"
-                      : "bg-gray-50"
+                    isMe ? "bg-primary/5" : i % 2 === 0 ? "bg-white" : "bg-gray-50"
                   }`}
                 >
                   <span className="text-gray-400 w-5 text-center text-xs">
@@ -99,6 +125,17 @@ function PlayerList({
                       </span>
                     )}
                   </span>
+                  {hasAssignments && (
+                    <span
+                      className={`ml-1 text-xs px-2 py-0.5 rounded-full font-medium ${
+                        isAssigned
+                          ? "bg-green-100 text-green-700"
+                          : "bg-gray-100 text-gray-500"
+                      }`}
+                    >
+                      {isAssigned ? "Active" : "Waitlist"}
+                    </span>
+                  )}
                   <span className="text-gray-400 ml-auto">
                     {new Date(e.enrolled_at).toLocaleDateString("en-US", {
                       month: "short",
@@ -350,11 +387,11 @@ export default function Friday() {
 
   const sessions = sessionsData?.data ?? [];
   const activeSession = sessions.find(
-    (s) => s.status === "ACTIVE" || s.status === "ENROLLMENT_OPEN"
+    (s) => s.status === "ACTIVE" || s.status === "ENROLLMENT_OPEN" || s.status === "LOCKED"
   );
   const today = new Date().toISOString().split("T")[0];
   const nonActiveSessions = sessions
-    .filter((s) => s.status !== "ACTIVE" && s.status !== "ENROLLMENT_OPEN")
+    .filter((s) => s.status !== "ACTIVE" && s.status !== "ENROLLMENT_OPEN" && s.status !== "LOCKED")
     .sort((a, b) => {
       if (a.start_date && b.start_date)
         return a.start_date.localeCompare(b.start_date);
@@ -504,7 +541,7 @@ export default function Friday() {
       status,
     }: {
       sessionId: string;
-      status: "ACTIVE" | "INACTIVE";
+      status: "ACTIVE" | "INACTIVE" | "LOCKED";
     }) => {
       const res = await apiFetch(`/api/seasons/${sessionId}/status`, {
         method: "PATCH",
@@ -522,6 +559,8 @@ export default function Friday() {
           title:
             variables.status === "ACTIVE"
               ? "Session activated — signups are open"
+              : variables.status === "LOCKED"
+              ? "Session locked — signups still open, withdrawals restricted"
               : "Session deactivated",
         });
       } else {
@@ -700,9 +739,15 @@ export default function Friday() {
                         <p className="font-semibold text-gray-800">
                           {activeSession.name}
                         </p>
-                        <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-green-100 text-green-700">
-                          Active
-                        </span>
+                        {activeSession.status === "LOCKED" ? (
+                          <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-amber-100 text-amber-700">
+                            Locked
+                          </span>
+                        ) : (
+                          <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-green-100 text-green-700">
+                            Active
+                          </span>
+                        )}
                       </div>
                       {activeSession.start_date && (
                         <p className="text-xs text-gray-400">
@@ -732,18 +777,47 @@ export default function Friday() {
                         </>
                       ) : (
                         <>
-                          <button
-                            onClick={() =>
-                              setStatus({
-                                sessionId: activeSession.id,
-                                status: "INACTIVE",
-                              })
-                            }
-                            disabled={isMutating}
-                            className="px-4 py-1.5 text-sm rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 disabled:opacity-40 cursor-pointer font-medium transition-colors"
-                          >
-                            {statusPending ? "..." : "Deactivate"}
-                          </button>
+                          {activeSession.status === "LOCKED" ? (
+                            <button
+                              onClick={() =>
+                                setStatus({
+                                  sessionId: activeSession.id,
+                                  status: "ACTIVE",
+                                })
+                              }
+                              disabled={isMutating}
+                              className="px-4 py-1.5 text-sm rounded-lg bg-amber-100 text-amber-700 hover:bg-amber-200 disabled:opacity-40 cursor-pointer font-medium transition-colors"
+                            >
+                              {statusPending ? "..." : "Unlock"}
+                            </button>
+                          ) : (
+                            <>
+                              <button
+                                onClick={() =>
+                                  setStatus({
+                                    sessionId: activeSession.id,
+                                    status: "LOCKED",
+                                  })
+                                }
+                                disabled={isMutating}
+                                className="px-4 py-1.5 text-sm rounded-lg bg-amber-50 text-amber-700 border border-amber-200 hover:bg-amber-100 disabled:opacity-40 cursor-pointer font-medium transition-colors"
+                              >
+                                {statusPending ? "..." : "Lock"}
+                              </button>
+                              <button
+                                onClick={() =>
+                                  setStatus({
+                                    sessionId: activeSession.id,
+                                    status: "INACTIVE",
+                                  })
+                                }
+                                disabled={isMutating}
+                                className="px-4 py-1.5 text-sm rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 disabled:opacity-40 cursor-pointer font-medium transition-colors"
+                              >
+                                {statusPending ? "..." : "Deactivate"}
+                              </button>
+                            </>
+                          )}
                           <button
                             onClick={() => setConfirmCancelId(activeSession.id)}
                             disabled={isMutating}
@@ -1059,24 +1133,36 @@ export default function Friday() {
                       {formatDate(activeSession.start_date)}
                     </p>
                   )}
-                  <div className="mt-4 flex gap-2">
-                    {myStatus === null && (
-                      <button
-                        onClick={() => enroll()}
-                        disabled={isMutating}
-                        className="px-5 py-2 text-sm rounded-lg bg-primary text-white hover:bg-primary/80 disabled:opacity-40 cursor-pointer"
-                      >
-                        Sign Up
-                      </button>
-                    )}
-                    {myStatus !== null && (
-                      <button
-                        onClick={() => withdraw()}
-                        disabled={isMutating}
-                        className="px-4 py-2 text-sm rounded-lg border border-gray-300 text-gray-600 hover:bg-gray-50 disabled:opacity-40 cursor-pointer"
-                      >
-                        Withdraw
-                      </button>
+                  <div className="mt-4 flex flex-col gap-2">
+                    <div className="flex gap-2">
+                      {myStatus === null && (
+                        <button
+                          onClick={() => enroll()}
+                          disabled={isMutating}
+                          className="px-5 py-2 text-sm rounded-lg bg-primary text-white hover:bg-primary/80 disabled:opacity-40 cursor-pointer"
+                        >
+                          Sign Up
+                        </button>
+                      )}
+                      {myStatus !== null && (
+                        <button
+                          onClick={() => withdraw()}
+                          disabled={isMutating || (activeSession.status === "LOCKED" && myStatus === "ACTIVE")}
+                          title={
+                            activeSession.status === "LOCKED" && myStatus === "ACTIVE"
+                              ? "Withdrawals are disabled once assignments have been set"
+                              : undefined
+                          }
+                          className="px-4 py-2 text-sm rounded-lg border border-gray-300 text-gray-600 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+                        >
+                          Withdraw
+                        </button>
+                      )}
+                    </div>
+                    {activeSession.status === "LOCKED" && myStatus === "ACTIVE" && (
+                      <p className="text-xs text-amber-600">
+                        Assignments have been set — withdrawals are no longer available.
+                      </p>
                     )}
                   </div>
                 </div>

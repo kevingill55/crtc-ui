@@ -27,7 +27,7 @@ export default function Welcome() {
         </div>
 
         <div className="w-full gap-4 flex flex-col md:flex-row">
-          <div className="w-full bg-blue-100 flex-col flex justify-between md:p-8 p-5">
+          <div className="w-full bg-blue-100 flex-col flex justify-between rounded-lg md:p-8 p-5">
             <div>
               <div className="pb-2 mb-4 border-b border-gray-400">
                 <h2 className="text-primary md:text-2xl text-xl md:tracking-tight">
@@ -82,7 +82,7 @@ export default function Welcome() {
               </Link>
             </div>
           </div>
-          <div className="w-full flex-col flex justify-between bg-zinc-200 md:p-8 p-5">
+          <div className="w-full flex-col flex justify-between rounded-lg bg-zinc-200 md:p-8 p-5">
             <div>
               <div className="pb-2 mb-4 border-b border-gray-400">
                 <h2 className="text-primary md:text-2xl text-xl md:tracking-tight">
