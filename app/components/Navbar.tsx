@@ -10,6 +10,7 @@ import {
   IconDefinition,
   faBars,
   faMap,
+  faCircleInfo,
 } from "@fortawesome/free-solid-svg-icons";
 import { AppRouterInstance } from "next/dist/shared/lib/app-router-context.shared-runtime";
 
@@ -83,6 +84,13 @@ export default function Navbar() {
                     title="Membership Info"
                     icon={faFileLines}
                     subtitle="CRTC memberships and league information"
+                  />
+                  <NavMenuItem
+                    router={router}
+                    route="/public/about"
+                    title="Who We Are"
+                    icon={faCircleInfo}
+                    subtitle="About the club and how we operate"
                   />
                   <NavMenuItem
                     router={router}
